@@ -3,7 +3,7 @@ AVR Programmer for Arduino Mega 2560 boards
 
 The idea of ​​this project was to create the most universal and, above all, simple programmer for AVR microprocessors. To support as many processors as possible, my requirement was a ZIF40 socket and programming using a high voltage of 12V. I chose high voltage support so that it would be possible to save microprocessors that were disabled by incorrect fuse settings, or if you previously needed another pin by melting the RSTDISBL fuse and you need to reload a new program. This required programming software that supports the ISP (In-System Programming), HVPP (High Voltage Parallel Programming) and HVSP (High Voltage Serial Programming) protocols. My requirement was also PC software support (Avrdude, Atmel Studio, MPLAB Studio). For this compatibility, I chose the STK500 version 2 communication protocol, which is described in the AVR068 document on the Microchip website, and is supported by all of the aforementioned programs. The STK500 protocol communicates with a PC via a serial interface, which greatly simplifies the resulting programmer. You can use an Arduino board that has a built-in USB -> Serial converter for programming and monitoring. I chose the Arduino Mega 2560 board for a sufficient number of pins. The resulting programmer board contains only 4 IOs, a few diodes, resistors and capacitors. A somewhat experienced electronics technician can solder the board himself (SMT soldering is required). The entire programmer is then simply inserted into the Arduino Mega 2560 board, and after uploading the firmware to the mega2560, it can be used immediately. The versatility of the programmer board also predetermines it for the implementation of other protocols such as TPI, PDI and UPDI. These will be added gradually.
 
-Main features:
+## Main features:
 - support for Avrdude, Atmel Studio, MPLAB Studio and others that support the STK500v2 protocol.
 - support for ISP, HVPP and HVSP protocols.
 - ZIF40 socket for various case sizes from 8 pin to 40 pin.
@@ -12,7 +12,8 @@ Main features:
 - connection of a small display to display the programmer status.
 - autodetection of the case size.
 
-Currently supported microprocessors:
+## Currently supported microprocessors:
+```
   // ATmega 8 (DIP28)
   {0x93, 0x07, 0 , 0 , "ATmega8/L/A"    },
 
@@ -77,6 +78,8 @@ Currently supported microprocessors:
 
   // ATtiny 13A (DIP8)
   {0x90, 0x07, 4 , 0 , "ATtiny13/A"     }, // not yet tested
+```
+
 
   // ATtiny 102 / 104 (TPI)
   {0x90, 0x0C, 8 , 0 , "ATtiny102"      },  // DIL8 - is being prepared
