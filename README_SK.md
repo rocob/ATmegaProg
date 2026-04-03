@@ -12,6 +12,9 @@ Myšlienkou tohto projektu bolo vytvoriť čo najviac univerzálny a hlavne jedn
 - pripojenie malého displeja na zobrazenie stavov programátora.
 - autodetekcia veľkosti puzdra.
 
+## Príklad prepínania Vysokého napätia:
+<img src="https://github.com/rocob/ATmegaProg/blob/main/images/4053_Example.webp" width="350">
+Na prepínanie pinu medzi MCU mega2560 a Vysokým napätím 12V je použitý prepínač CMOS 4053. Štandardne je pin pripojený k mega2560, čo zaisťuje logická úroveň 1 pomocou rezistora R. Po privedení Log. 0 na vstup SEL, sa prepne TARGET pin na HV +12V. Takto sú zapojené piny 1, 4, 9, 10 a 31 pätice ZIF.
 
 # Aktuálne podporované mikroprocesory:
 ```
