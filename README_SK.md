@@ -3,7 +3,7 @@ AVR Programmer for Arduino Mega 2560 boards
 
 Myšlienkou tohto projektu bolo vytvoriť čo najviac univerzálny a hlavne jednoduchý programátor mikroprocesorov rady AVR. Pre podporu čo najviac procesorov bolo mojou podmienkou pätica ZIF40 a programovanie pomocou vysokého napätia 12V. Podporu vysokého napätia som zvolil preto, aby bolo možné zachraňovať mikroprocesory, ktoré boli znefunkčené nesprávnym nastavením poistiek, alebo ak ste predtým potrebovali ďalší pin natavením poistky RSTDISBL a potrebujete znovu nahrať nový program. Týmto bolo potrebné naprogramovať taký software, ktorý podporuje protokoly ISP (In-System Programming), HVPP (High Voltage Paralel Programming) a HVSP (High Voltage Serial Programming). Taktiež bolo mojou podmienkou podpora PC software (Avrdude, Atmel Studio, MPLAB Studio). Pre túto kompatibilitu som zvolil komunikačný protokol STK500 verzie 2, ktorý popisuje dokument AVR068 na stránkach Microchip, a podporujú ho všetky spomínané programy. Protokol STK500 komunikuje pomocou PC sériovým rozhraním, čo značne zjednodušuje výsledný programátor. Dá sa použiť Arduino doska, ktorá má vstavaný prevodník USB -> Serial pre programovanie a monitorovanie. Pre dostatočný počet pinov som zvolil dosku Arduino Mega 2560. Výsledná doska programátora obsahuje len 4 IO, niekoľko diód, odporov a kondenzátorov. Trochu skúsený elektronik si dosku vie zospájkovať aj sám (vyžaduje sa SMT spájkovanie). Celý programátor sa potom len zasunie do dosky Arduino Mega 2560, a po nahratí firmware do mega2560, sa môže hneď používať. Univerzálnosť dosky programátora ho predurčuje aj na implementáciu ďalších protokolov ako sú TPI, PDI a UPDI. Tieto budú doplnené postupne.
 
-Hlavné vlastnosti:
+# Hlavné vlastnosti:
 - podpora software Avrdude, Atmel Studio, MPLAB Studio a iné, ktoré podporujú protokol STK500v2.
 - podpora protokolov ISP , HVPP a HVSP.
 - pätica ZIF40 pre rôzne veľkosti puzdier od 8 pin až do 40 pin.
@@ -13,7 +13,8 @@ Hlavné vlastnosti:
 - autodetekcia veľkosti puzdra.
 
 
-Aktuálne podporované mikroprocesory:
+# Aktuálne podporované mikroprocesory:
+```
   // ATmega 8 (DIP28)
   {0x93, 0x07, 0 , 0 , "ATmega8/L/A"    },
 
@@ -78,6 +79,7 @@ Aktuálne podporované mikroprocesory:
 
   // ATtiny 13A (DIP8)
   {0x90, 0x07, 4 , 0 , "ATtiny13/A"     }, // not yet tested
+```
 
   // ATtiny 102 / 104 (TPI)
   {0x90, 0x0C, 8 , 0 , "ATtiny102"      },  // DIL8 - is being prepared
