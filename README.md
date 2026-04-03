@@ -10,7 +10,7 @@ The idea of ​​this project was to create the most universal and, above all, 
 - using the built-in 6 pin ISP connector, it is possible to program MCUs in larger packages.
 - the built-in HV 12V power supply can be programmatically applied to one of the five pins of the ZIF socket (1, 4, 9, 10 and 31).
 - connection of a small display to display the programmer status.
-- autodetection of the case size.
+- autodetection of the package size.
 
 ## Currently supported microprocessors:
 ```
