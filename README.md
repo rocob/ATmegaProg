@@ -12,6 +12,9 @@ The idea of ​​this project was to create the most universal and, above all, 
 - connection of a small display to display the programmer status.
 - autodetection of the package size.
 
+## High voltage switch example:
+<img src="https://github.com/rocob/ATmegaProg/blob/main/images/4053_Example.webp" width="350">
+
 ## Currently supported microprocessors:
 ```
   // ATmega 8 (DIP28)
