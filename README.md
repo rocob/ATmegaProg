@@ -78,9 +78,8 @@ The idea of ​​this project was to create the most universal and, above all, 
 
   // ATtiny 13A (DIP8)
   {0x90, 0x07, 4 , 0 , "ATtiny13/A"     }, // not yet tested
-```
-
 
   // ATtiny 102 / 104 (TPI)
   {0x90, 0x0C, 8 , 0 , "ATtiny102"      },  // DIL8 - is being prepared
   {0x90, 0x0B, 9 , 0 , "ATtiny104"      }   // DIL14
+```
