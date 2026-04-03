@@ -14,6 +14,7 @@ The idea of ​​this project was to create the most universal and, above all, 
 
 ## High voltage switch example:
 <img src="https://github.com/rocob/ATmegaProg/blob/main/images/4053_Example.webp" width="350">
+A CMOS 4053 switch is used to switch the pin between the mega2560 MCU and the High Voltage 12V. By default, the pin is connected to the mega2560, which is ensured by a logic level of 1 using a resistor R. After applying Log. 0 to the SEL input, the TARGET pin is switched to HV +12V. This is how pins 1, 4, 9, 10 and 31 of the ZIF socket are connected.
 
 ## Currently supported microprocessors:
 ```
