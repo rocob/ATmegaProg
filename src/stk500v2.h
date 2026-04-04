@@ -483,32 +483,32 @@ Index  Názov param. Dĺžka Popis
 
     delay(20);                          // Wait for at least 20ms and enable serial programming
     
-//    uint8_t loops = STKP_synchLoops;
-//    if (!loops) loops = 1;
-//    do {
-    resetTarget(false);                 // Pulse RESET
-    delayMicroseconds(100);
-    resetTarget();
-    delayMicroseconds(100);
-    // delay(50);
-    
-    spi_transaction(msgBuffer, 8);
+    uint8_t loops = STKP_synchLoops;
+    if (!loops) loops = 1;
+    do {
+      resetTarget(false);                 // Pulse RESET
+      delayMicroseconds(100);
+      resetTarget();
+      delayMicroseconds(100);
+      
+      // delay(50);
+      // spi_transaction(msgBuffer, 8);
 
-//    if (targetISP == IDC06) {
-//      SPI.transfer(msgBuffer[8]);
-//      SPI.transfer(msgBuffer[9]);
-//      val = SPI.transfer(msgBuffer[10]);
-//      ins = SPI.transfer(msgBuffer[11]);
-//    } else {
-//      VirtualSPI.transfer(msgBuffer[8]);
-//      VirtualSPI.transfer(msgBuffer[9]);
-//      val = VirtualSPI.transfer(msgBuffer[10]);
-//      ins = VirtualSPI.transfer(msgBuffer[11]);
-//    }
-//    if (STKP_pollIndex == 4) val = ins;
-//    else if (STKP_pollIndex != 3) break;
-//    loops--;
-//    } while (STKP_pollValue != val && loops > 0);
+      if (targetISP == IDC06) {
+        SPI.transfer(msgBuffer[8]);
+        SPI.transfer(msgBuffer[9]);
+        val = SPI.transfer(msgBuffer[10]);
+        ins = SPI.transfer(msgBuffer[11]);
+      } else {
+        VirtualSPI.transfer(msgBuffer[8]);
+        VirtualSPI.transfer(msgBuffer[9]);
+        val = VirtualSPI.transfer(msgBuffer[10]);
+        ins = VirtualSPI.transfer(msgBuffer[11]);
+      }
+      if (STKP_pollIndex == 4) val = ins;
+      else if (STKP_pollIndex != 3) break;
+      loops--;
+    } while (STKP_pollValue != val && loops > 0);
 
     progMode = STK_PROGMODE_ISP;
 
