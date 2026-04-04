@@ -6,7 +6,7 @@ The idea of ​​this project was to create the most universal and, above all, 
 ## Main features:
 - support for Avrdude, Atmel Studio, MPLAB IDE and others that support the STK500v2 protocol.
 - support for ISP, HVPP and HVSP protocols.
-- ZIF40 socket for various case sizes from 8 pin to 40 pin.
+- ZIF40 socket for various package sizes from 8 pin to 40 pin.
 - using the built-in 6 pin ISP connector, it is possible to program MCUs in larger packages.
 - the built-in HV 12V power supply can be programmatically applied to one of the five pins of the ZIF socket (1, 4, 9, 10 and 31).
 - connection of a small display to display the programmer status.
@@ -114,8 +114,7 @@ A CMOS 4053 switch is used to switch the pin between the mega2560 MCU and the Hi
   // ATtiny40 0x1E 0x92 0x0E  // SO20, TSSOP20
 
 ```
-Bugs
-----
+## Bugs
 
 Users are encouraged to post their bug reports using git issues or opening an issue in git:
 
@@ -126,8 +125,7 @@ This should include how the problem occurred, the command line and
 output from the programmer showing the startup messages and any errors.
 A history is also useful, ie did it work before.
 
-Donations
----------
+## Donations
 
 ATmegaProg has no fees of any kind but donations are accepted.
 
