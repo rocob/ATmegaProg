@@ -114,3 +114,23 @@ A CMOS 4053 switch is used to switch the pin between the mega2560 MCU and the Hi
   // ATtiny40 0x1E 0x92 0x0E  // SO20, TSSOP20
 
 ```
+Bugs
+----
+
+Users are encouraged to post their bug reports using git issues or opening an issue in git:
+
+https://github.com/rocob/ATmegaProg/issues
+
+All problem reports must be accompanied by a proper problem definition.
+This should include how the problem occurred, the command line and
+output from the programmer showing the startup messages and any errors.
+A history is also useful, ie did it work before.
+
+Donations
+---------
+
+ATmegaProg has no fees of any kind but donations are accepted.
+
+BTC: 16JvqnECPTZM9kr7VhNH2iUmBxb7WmnUsR
+
+Happy programming!
