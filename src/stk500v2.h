@@ -54,7 +54,7 @@ uint8_t msgChecksum = 0;
 
 uint8_t STKP_timeout = 0;           // Command time-out (in ms)
 uint8_t STKP_stabDelay = 0;         // Delay (in ms) used for pin stabilization
-uint8_t STKP_eraseDelay = 0;        // Delay (in ms) to ensure that the erase finished
+// uint8_t STKP_eraseDelay = 0;        // Delay (in ms) to ensure that the erase finished
 uint8_t STKP_cmdexeDelay = 0;       // Delay (in ms) in connection with the 
                                     // EnterProgMode command execution
 uint8_t STKP_synchLoops = 0;        // Number of synchronization loops
@@ -63,7 +63,7 @@ uint8_t STKP_byteDelay = 0;         // Delay (in ms) between each byte in the
 uint8_t STKP_pollValue = 0;         // Poll value: 0x53 for AVR, 0x69 for AT89xx
 uint8_t STKP_pollIndex = 0;         // Start address, received byte:
                                     // 0 = no polling, 3 = AVR, 4 = AT89xx
-uint8_t STKP_pollMethod = 0;        // Poll method, 0 = use delay 1= use RDY/BSY command
+// uint8_t STKP_pollMethod = 0;        // Poll method, 0 = use delay 1= use RDY/BSY command
 uint8_t STKP_progModeDelay= 0;      // Delay (in ms) in connection with the EnterProgMode
 uint8_t STKP_latchCycles =  0;      // Number of xtal cycles used to latch OSCCAL
 uint8_t STKP_toggleVtg =    0;      // Toggle Vtg when entering prog.mode (0=no, 1=yes).
@@ -443,7 +443,7 @@ Index  Názov param. Dĺžka Popis
 //*****************************************************  
   } else if (cmd == CMD_ENTER_PROGMODE_ISP) {   // 0x10
 
-    // If MCU package not inserted to ZIF, change target ISP to IDC06 connector
+    // If MCU package not inserted to ZIF, change ISP target to IDC06 connector
     if (currentMCUpackage) {
       targetISP = ZIF40;
     } else {
@@ -457,6 +457,10 @@ Index  Názov param. Dĺžka Popis
     STKP_byteDelay =    msgBuffer[5];   // 0 ms
     STKP_pollValue =    msgBuffer[6];   // 0x53 for AVR (0x69 for AT89xx)
     STKP_pollIndex =    msgBuffer[7];   // 3 (0 no polling, 3 AVR, 4 AT89xx)
+    // msgBuffer[8] - cmd1 - eq 0xAC
+    // msgBuffer[9] - cmd2 - eq 0x53
+    // msgBuffer[10]- cmd3 - eq 0x00
+    // msgBuffer[11]- cmd4 - eq 0x00
 
     setupISP(currentMCUpackage);
 
@@ -477,15 +481,35 @@ Index  Názov param. Dĺžka Popis
       digitalWrite(ZIF40_PIN_SCK, LOW);
     }
 
-    delay(20);
-    //digitalWrite(PIN_RESET, HIGH);
-    resetTarget(false);
+    delay(20);                          // Wait for at least 20ms and enable serial programming
+    
+//    uint8_t loops = STKP_synchLoops;
+//    if (!loops) loops = 1;
+//    do {
+    resetTarget(false);                 // Pulse RESET
     delayMicroseconds(100);
-    //digitalWrite(PIN_RESET, LOW);
     resetTarget();
-
-    delay(50);
+    delayMicroseconds(100);
+    // delay(50);
+    
     spi_transaction(msgBuffer, 8);
+
+//    if (targetISP == IDC06) {
+//      SPI.transfer(msgBuffer[8]);
+//      SPI.transfer(msgBuffer[9]);
+//      val = SPI.transfer(msgBuffer[10]);
+//      ins = SPI.transfer(msgBuffer[11]);
+//    } else {
+//      VirtualSPI.transfer(msgBuffer[8]);
+//      VirtualSPI.transfer(msgBuffer[9]);
+//      val = VirtualSPI.transfer(msgBuffer[10]);
+//      ins = VirtualSPI.transfer(msgBuffer[11]);
+//    }
+//    if (STKP_pollIndex == 4) val = ins;
+//    else if (STKP_pollIndex != 3) break;
+//    loops--;
+//    } while (STKP_pollValue != val && loops > 0);
+
     progMode = STK_PROGMODE_ISP;
 
     // send answer
@@ -519,39 +543,53 @@ Index  Názov param. Dĺžka Popis
 
 //*****************************************************  
   } else if (cmd == CMD_CHIP_ERASE_ISP) {       // 0x12
-    STKP_eraseDelay = msgBuffer[1];
-    STKP_pollMethod = msgBuffer[2];
+    uint8_t eDelay = msgBuffer[1];              // STKP_eraseDelay
+    uint8_t method = msgBuffer[2];              // STKP_pollMethod, 0 = use delay, 1= use RDY/BSY
 
-    spi_transaction(msgBuffer, 3);
     //val = spi_transaction(0xAC, 0x80, 0x00, 0x00);
-    if (STKP_pollMethod == 1)
-      delay(STKP_eraseDelay);
+    spi_transaction(msgBuffer, 3);
+
+    uint16_t timeout = 100 * eDelay;
+    if (method == 1) {
+      do {
+        delayMicroseconds(10);
+        val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
+        timeout--;
+      } while(val == 1 && timeout > 0);
+    } else {
+      delay(eDelay);
+    }
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_PROGRAM_FLASH_ISP) {    // 0x13
     uint16_t size = ((uint16_t)msgBuffer[1]<<8) | msgBuffer[2];
     uint8_t  mode = msgBuffer[3];  // 0xC1
-    /*  Bit Function
+    /*  Bit Function in the mode byte
         0   0 = Word mode, 1 = Page mode
-        1   Timed delay page mode
-        2   Value polling page mode
-        3   RDY/BSY polling page mode
-        4   Timed delay word mode
-        5   Value polling word mode
-        6   RDY/BSY pollind word mode
+        1   Timed delay word mode
+        2   Value polling word mode
+        3   RDY/BSY polling word mode
+        4   Timed delay page mode
+        5   Value polling page mode
+        6   RDY/BSY polling page mode
         7   0 = Don't write page, 1 = Write page
     */
-    uint8_t time = msgBuffer[4];  // 5 ms
-    uint8_t cmd1 = msgBuffer[5];  // 0x40
+    uint8_t pDelay = msgBuffer[4];  // 5 ms
+    uint8_t cmd1   = msgBuffer[5];  // 0x40
     // msgBuffer[6] - cmd2 - eq 0x4C
     // msgBuffer[7] - cmd3 - eq 0x20
     // msgBuffer[8] - poll1 - 0xFF
     // msgBuffer[9] - poll2 - 0xFF
     // msgBuffer[10] - first data
     uint16_t p = 10;
+    uint16_t timeout = 100 * pDelay;
     bool is_high = false;
 
     if (mode & 0x01) {             // PAGE MODE
@@ -562,11 +600,24 @@ Index  Názov param. Dĺžka Popis
         spi_transaction(cmdx, 0x00,
           (STKP_address + (i/2)) & 0xFF, msgBuffer[p++]);
       }
-      // Commit
-      spi_transaction(msgBuffer[6],
-        (STKP_address >> 8) & 0xFF,
-        STKP_address & 0xFF, 0x00);
-      delay(time);
+
+      if (mode & 0x80) {            // COMMIT (Write page)
+        spi_transaction(msgBuffer[6],
+          (STKP_address >> 8) & 0xFF,
+          STKP_address & 0xFF, 0x00);
+      
+        if (mode & 0x40) {            // RDY/BSY polling
+          do {
+            delayMicroseconds(10);
+            val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
+            timeout--;
+          } while(val == 1 && timeout > 0);
+        } else {
+          delay(pDelay);              // Timed delay
+        }
+
+      }
+
       STKP_address += (size / 2);
 
     } else {                        // WORD MODE
@@ -575,12 +626,28 @@ Index  Názov param. Dĺžka Popis
                         STKP_address & 0xFF, 
                         msgBuffer[p++]);
         STKP_address++;
-        delay(time); 
+
+        timeout = 100 * pDelay;
+        if (mode & 0x08) {          // RDY/BSY polling
+          do {
+            delayMicroseconds(10);
+            val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
+            timeout--;
+          } while(val == 1 && timeout > 0);
+        } else {
+          delay(pDelay);            // Timed delay
+        }
+
+        if (!timeout) break;
       }
     }
     
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_FLASH_ISP) {       // 0x14
@@ -606,37 +673,48 @@ Index  Názov param. Dĺžka Popis
 //                                                          if (STKdump) lcdDump(msgBuffer, msgLength);
     uint16_t size = ((uint16_t)msgBuffer[1] << 8) | msgBuffer[2];
     uint8_t  mode = msgBuffer[3];  // 0xC1
-    /*  Bit Function
+    /*  Bit Function in the mode byte
         0   0 = Word mode, 1 = Page mode
-        1   Timed delay page mode
-        2   Value polling page mode
-        3   RDY/BSY polling page mode
-        4   Timed delay word mode
-        5   Value polling word mode
-        6   RDY/BSY pollind word mode
+        1   Timed delay word mode
+        2   Value polling word mode
+        3   RDY/BSY polling word mode
+        4   Timed delay page mode
+        5   Value polling page mode
+        6   RDY/BSY polling page mode
         7   0 = Don't write page, 1 = Write page
     */
-    uint8_t time = msgBuffer[4];  // 20 ms Delay, used for different types
-    uint8_t cmd1 = msgBuffer[5];  // 0xC1 standard 0xC0-word, 0xC1-page
+    uint8_t pDelay = msgBuffer[4];  // 20 ms Delay, used for different types
+    uint8_t cmd1   = msgBuffer[5];  // 0xC1 standard 0xC0-word, 0xC1-page
     // msgBuffer[6] - cmd2 - eq 0xC2
     // msgBuffer[7] - cmd3 - eq 0xA0
     // msgBuffer[8] - poll1 - 0xFF
     // msgBuffer[9] - poll2 - 0xFF
     // msgBuffer[10] - first data
     uint16_t p = 10; 
+    uint16_t timeout = 100 * pDelay;
 
     if (mode & 0x01) {             // PAGE MODE
       // Load EEPROM memory page
       for (uint16_t i = 0; i < size; i++) {
         spi_transaction(cmd1, 0x00, i, msgBuffer[p++]);
       }
-      if (mode & 0x80) {           // COMMIT
+      if (mode & 0x80) {           // COMMIT (Write page)
         spi_transaction(msgBuffer[6],
           (STKP_address >> 8) & 0xFF,
           STKP_address & 0xFF, 0x00);
-        delay(time);
+      
+        if (mode & 0x40) {            // RDY/BSY polling
+          do {
+            delayMicroseconds(10);
+            val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
+            timeout--;
+          } while(val == 1 && timeout > 0);
+        } else {
+          delay(pDelay);              // Timed delay
+        }
+
       }
-      STKP_address += (size / 2);
+      STKP_address += size;
 
     } else {                        // WORD MODE
       for (uint16_t i = 0; i < size; i++) {
@@ -644,12 +722,28 @@ Index  Názov param. Dĺžka Popis
                         STKP_address & 0xFF, 
                         msgBuffer[p++]);
         STKP_address++;
-        delay(time); 
+
+        timeout = 100 * pDelay;
+        if (mode & 0x08) {          // RDY/BSY polling
+          do {
+            delayMicroseconds(10);
+            val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
+            timeout--;
+          } while(val == 1 && timeout > 0);
+        } else {
+          delay(pDelay);            // Timed delay
+        }
+
+        if (!timeout) break;
       }
     }
 
     msgBuffer[1] = STATUS_CMD_OK;
     msgLength = 2;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_EEPROM_ISP) {      // 0x16
@@ -670,6 +764,7 @@ Index  Názov param. Dĺžka Popis
 //*****************************************************  
   } else if (cmd == CMD_PROGRAM_FUSE_ISP) {     // 0x17
     spi_transaction(msgBuffer, 1);
+    delay(20);
 
     msgLength = 3;
     msgBuffer[1] = STATUS_CMD_OK;
@@ -687,6 +782,7 @@ Index  Názov param. Dĺžka Popis
 //*****************************************************  
   } else if (cmd == CMD_PROGRAM_LOCK_ISP) {     // 0x19
     spi_transaction(msgBuffer, 1);
+    delay(20);
 
     msgLength = 3;
     msgBuffer[1] = STATUS_CMD_OK;
@@ -798,7 +894,7 @@ Index  Názov param. Dĺžka Popis
     digitalWrite(HVPP.OE, HIGH);
     
     // Počkáme, kým čip potvrdí pripravenosť (ak RDY pin existuje)
-    uint16_t timeout = 1000;  // 1 ms
+    uint16_t timeout = 100;  // 1 ms
     while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
         delayMicroseconds(10);
         timeout--;
@@ -1615,4 +1711,3 @@ void stk500v2_process() {
       break;
   }
 }
-
