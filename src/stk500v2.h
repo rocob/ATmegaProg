@@ -4,7 +4,7 @@
 
   created 2026.03.03
   by Robert Kovaľ <http://www.toroproduction.sk>
-  modified 2026.04.03
+  modified 2026.04.04
   by Robert Kovaľ
 
   This is private source code
@@ -240,7 +240,7 @@ void messageSend() {
 //                      STK500v2 commands
 //******************************************************************
 
-void stk500_commands() {
+void stk500v2_commands() {
   uint8_t cmd = msgBuffer[0];
   uint8_t ins = msgBuffer[1];
   uint8_t val = 0;
@@ -252,6 +252,8 @@ void stk500_commands() {
 //                  General commands 
 //*****************************************************  
   if (cmd == CMD_SIGN_ON) {                     // 0x01
+    STKError = 0;
+    
     msgLength = 11;
     msgBuffer[1]  = STATUS_CMD_OK;
 
@@ -311,6 +313,7 @@ void stk500_commands() {
         break;
       default:
         result = STATUS_SET_PARAM_MISSING;
+        STKError = msgBuffer[0];
     }
 
      msgLength = 2;
@@ -423,7 +426,10 @@ Index  Názov param. Dĺžka Popis
 
     // answer
     msgBuffer[1] = STATUS_CMD_OK;
-    if (msgLength != 5) msgBuffer[1] = STATUS_CMD_FAILED;
+    if (msgLength != 5) {
+      msgBuffer[1] = STATUS_CMD_FAILED;
+      STKError = msgBuffer[0];
+    }
     msgLength = 2;
 
 //*****************************************************  
@@ -750,6 +756,7 @@ Index  Názov param. Dĺžka Popis
 
     // If current MCU package is none, disable progmode and answer timeout
     if (!currentMCUpackage) {
+      STKError = msgBuffer[0];
       msgLength = 2;
       msgBuffer[1] = STATUS_CMD_TOUT;
       messageSend();
@@ -802,7 +809,10 @@ Index  Názov param. Dĺžka Popis
     // Answer
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_LEAVE_PROGMODE_PP) {    // 0x21
@@ -834,7 +844,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_PROGRAM_FLASH_PP) {     // 0x23
@@ -891,7 +904,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_FLASH_PP) {        // 0x24
@@ -960,7 +976,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_EEPROM_PP) {       // 0x26
@@ -1004,7 +1023,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_FUSE_PP) {         // 0x28
@@ -1045,7 +1067,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_LOCK_PP) {         // 0x2A
@@ -1117,6 +1142,7 @@ Index  Názov param. Dĺžka Popis
 
     // If current MCU package is none, disable progmode and answer timeout
     if (!currentMCUpackage) {
+      STKError = msgBuffer[0];
       msgLength = 2;
       msgBuffer[1] = STATUS_CMD_TOUT;
       messageSend();
@@ -1201,7 +1227,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_PROGRAM_FLASH_HVSP) {   // 0x33
@@ -1270,7 +1299,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_FLASH_HVSP) {      // 0x34
@@ -1353,7 +1385,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_EEPROM_HVSP) {     // 0x36
@@ -1403,7 +1438,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_FUSE_HVSP) {       // 0x38
@@ -1446,7 +1484,10 @@ Index  Názov param. Dĺžka Popis
 
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
-    if (!timeout) msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+    if (!timeout) {
+      msgBuffer[1] = STATUS_RDY_BSY_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_READ_LOCK_HVSP) {       // 0x3A
@@ -1494,10 +1535,11 @@ Index  Názov param. Dĺžka Popis
 //*****************************************************  
   } else {
                                                           if (STKdump) lcdPrintln("FAILED");
+    STKError = msgBuffer[0];
+    
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_FAILED;
   }
-  messageSend();
 }
 
 
@@ -1562,7 +1604,8 @@ void stk500v2_process() {
         msgState = STK_START;
       } else {
         msgState = STK_PROCESS;
-        stk500_commands();            // execute command
+        stk500v2_commands();          // execute command
+        messageSend();
         msgState = STK_START;
       }
       break;
