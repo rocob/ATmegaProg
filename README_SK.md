@@ -114,3 +114,19 @@ Na prepínanie pinu medzi MCU mega2560 a Vysokým napätím 12V je použitý pre
   // ATtiny40 0x1E 0x92 0x0E  // SO20, TSSOP20
 
 ```
+
+## Chyby
+
+Používatelia sa vyzývajú, aby svoje hlásenia o chybách zverejňovali pomocou príkazu git issues alebo otvorením problému v gite:
+
+https://github.com/rocob/ATmegaProg/issues
+
+Všetky hlásenia o problémoch musia byť sprevádzané správnou definíciou problému. Táto definícia by mala obsahovať popis vzniku problému, príkazový riadok a výstup programátora so správami pri spustení a prípadnými chybami. Užitočná je aj história, t. j. či to predtým fungovalo.
+
+## Dary
+
+ATmegaProg nemá žiadne poplatky, ale dary sú akceptované.
+
+BTC: 16JvqnECPTZM9kr7VhNH2iUmBxb7WmnUsR
+
+Prajeme príjemné programovanie!
