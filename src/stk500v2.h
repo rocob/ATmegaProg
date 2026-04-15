@@ -905,14 +905,15 @@ Index  Názov param. Dĺžka Popis
     HV_apply(currentMCU.HVPP);
     digitalWrite(HVxP_ON_12V, LOW);               // LOW value Power switch ON 12V
     delayMicroseconds(10);                        // Short delay on apply 12V
-    // if (digitalRead(VPP_CSENSE)) {                // Check if 12V not high currency
-    //   digitalWrite(HVxP_ON_12V, HIGH);            // and disable 12V if high currency
-    //   setupHVxP(currentMCUpackage, false);
-    //   STKError = msgBuffer[0];
-    //   msgLength = 2;
-    //   msgBuffer[1] = STATUS_CMD_FAILED;
-    //   return;
-    // }
+    
+    if (digitalRead(VPP_CSENSE)) {                // Check if 12V not high currency
+      digitalWrite(HVxP_ON_12V, HIGH);            // and disable 12V if high currency
+      setupHVxP(currentMCUpackage, false);
+      STKError = msgBuffer[0];
+      msgLength = 2;
+      msgBuffer[1] = STATUS_CMD_FAILED;
+      return;
+    }
 
     // 4. Dokončenie sekvencie vstupu
     // Niektoré čipy vyžadujú počas držania 12V krátky pulz na XTAL alebo WR
@@ -1302,6 +1303,15 @@ Index  Názov param. Dĺžka Popis
     HV_apply(currentMCU.HVPP);
     digitalWrite(HVxP_ON_12V, LOW);               // LOW value Power switch ON 12V
     delayMicroseconds(10);
+    
+    if (digitalRead(VPP_CSENSE)) {                // Check if 12V not high currency
+      digitalWrite(HVxP_ON_12V, HIGH);            // and disable 12V if high currency
+      setupHVxP(currentMCUpackage, false);
+      STKError = msgBuffer[0];
+      msgLength = 2;
+      msgBuffer[1] = STATUS_CMD_FAILED;
+      return;
+    }
 
     // 4. Release the Prog_enable[2]/SDO pin after tHVRST has elapsed.
     pinMode(HVSP.PEN2, INPUT);
