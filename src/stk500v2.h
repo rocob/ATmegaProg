@@ -4,7 +4,7 @@
 
   created 2026.03.03
   by Robert Kovaľ <http://www.toroproduction.sk>
-  modified 2026.04.04
+  modified 2026.04.12
   by Robert Kovaľ
 
   This is private source code
@@ -267,13 +267,17 @@ void stk500v2_commands() {
     // msgBuffer[9]  = ' ';
     // msgBuffer[10] = ' ';
 
-    msgBuffer[2]  = 8;
+    // msgBuffer[2]  = 8;
     // msgBuffer[3]  = 'A';
     // msgBuffer[4]  = 'V';
     // msgBuffer[5]  = 'R';
     // msgBuffer[6]  = 'I';
     // msgBuffer[7]  = 'S';
     // msgBuffer[8]  = 'P';
+    // msgBuffer[9]  = '_';
+    // msgBuffer[10] = '2';
+
+    msgBuffer[2]  = 8;
     msgBuffer[3]  = 'S';
     msgBuffer[4]  = 'T';
     msgBuffer[5]  = 'K';
@@ -283,9 +287,22 @@ void stk500v2_commands() {
     msgBuffer[9]  = '_';
     msgBuffer[10] = '2';
 
+    // msgLength = 13;
+    // msgBuffer[2]  = 10;
+    // msgBuffer[3]  = 'A';
+    // msgBuffer[4]  = 'V';
+    // msgBuffer[5]  = 'R';
+    // msgBuffer[6]  = 'I';
+    // msgBuffer[7]  = 'S';
+    // msgBuffer[8]  = 'P';
+    // msgBuffer[9]  = '_';
+    // msgBuffer[10] = 'M';
+    // msgBuffer[11] = 'K';
+    // msgBuffer[12] = '2';
+    
 //*****************************************************  
   } else if (cmd == CMD_SET_PARAMETER) {        // 0x02
-                                                          if (STKdump) lcdPrintHex(ins);
+                                                          if (STKdump) lcdPrintHex(ins, 'p');
 //                                                          if (STKdump) lcdDump(msgBuffer, msgLength);
     uint8_t result = STATUS_CMD_OK;
     val = msgBuffer[2];
@@ -321,7 +338,7 @@ void stk500v2_commands() {
         
 //*****************************************************  
   } else if (cmd == CMD_GET_PARAMETER) {        // 0x03
-                                                          if (STKdump) lcdPrintHex(ins);
+                                                          if (STKdump) lcdPrintHex(ins, 'p');
 //                                                          if (STKdump) lcdDump(msgBuffer, msgLength);
     switch (ins) {
       case PARAM_BUILD_NUMBER_LOW:  // 0x80
@@ -509,12 +526,16 @@ Index  Názov param. Dĺžka Popis
       else if (STKP_pollIndex != 3) break;
       loops--;
     } while (STKP_pollValue != val && loops > 0);
-
+  
     progMode = STK_PROGMODE_ISP;
-
+                                                          if (STKdump) lcdPrintHex(loops, '#');
     // send answer
     msgLength = 2;
     msgBuffer[1] = STATUS_CMD_OK;
+    if (!loops) {
+      msgBuffer[1] = STATUS_CMD_TOUT;
+      STKError = msgBuffer[0];
+    }
 
 //*****************************************************  
   } else if (cmd == CMD_LEAVE_PROGMODE_ISP) {   // 0x11
@@ -592,7 +613,7 @@ Index  Názov param. Dĺžka Popis
     uint16_t timeout = 100 * pDelay;
     bool is_high = false;
 
-    if (mode & 0x01) {             // PAGE MODE
+    if (mode & 0x01) {              // PAGE MODE
       // Load FLASH memory page
       for (uint16_t i = 0; i < size; i++) {
         uint8_t cmdx = (i % 2 == 0) ? cmd1 : (cmd1 | 0x08);
@@ -606,14 +627,14 @@ Index  Názov param. Dĺžka Popis
           (STKP_address >> 8) & 0xFF,
           STKP_address & 0xFF, 0x00);
       
-        if (mode & 0x40) {            // RDY/BSY polling
+        if (mode & 0x40) {          // RDY/BSY polling
           do {
             delayMicroseconds(10);
             val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
             timeout--;
           } while(val == 1 && timeout > 0);
         } else {
-          delay(pDelay);              // Timed delay
+          delay(pDelay);            // Timed delay
         }
 
       }
@@ -693,24 +714,24 @@ Index  Názov param. Dĺžka Popis
     uint16_t p = 10; 
     uint16_t timeout = 100 * pDelay;
 
-    if (mode & 0x01) {             // PAGE MODE
+    if (mode & 0x01) {              // PAGE MODE
       // Load EEPROM memory page
       for (uint16_t i = 0; i < size; i++) {
         spi_transaction(cmd1, 0x00, i, msgBuffer[p++]);
       }
-      if (mode & 0x80) {           // COMMIT (Write page)
+      if (mode & 0x80) {            // COMMIT (Write page)
         spi_transaction(msgBuffer[6],
           (STKP_address >> 8) & 0xFF,
           STKP_address & 0xFF, 0x00);
       
-        if (mode & 0x40) {            // RDY/BSY polling
+        if (mode & 0x40) {          // RDY/BSY polling
           do {
             delayMicroseconds(10);
             val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
             timeout--;
           } while(val == 1 && timeout > 0);
         } else {
-          delay(pDelay);              // Timed delay
+          delay(pDelay);            // Timed delay
         }
 
       }
@@ -855,7 +876,6 @@ Index  Názov param. Dĺžka Popis
       STKError = msgBuffer[0];
       msgLength = 2;
       msgBuffer[1] = STATUS_CMD_TOUT;
-      messageSend();
       return;
     }
 
@@ -875,29 +895,35 @@ Index  Názov param. Dĺžka Popis
     dataMode(OUTPUT);
     dataWrite(0x00);
 
-    // 2. Sekvencia zapínania napätí (podľa datasheetu)
-    // digitalWrite(currentMCU.GND1, LOW);
-    // if (currentMCU.GND2)
-    //   digitalWrite(currentMCU.GND2, LOW);
+    // 2. Sekvencia zapínania napätí
     digitalWrite(currentMCU.VCC1, HIGH);          // Zapni VCC (5V)
+    if (currentMCU.VCC2)
+      digitalWrite(currentMCU.VCC2, HIGH);
     delayMicroseconds(100);                       // Stabilizácia
 
-    // 3. Aktivácia 12V na RESET
-    //digitalWrite(currentMCU.RESET_12V, HIGH);
+    // 3. Activate 12V to RESET pin
     HV_apply(currentMCU.HVPP);
     digitalWrite(HVxP_ON_12V, LOW);               // LOW value Power switch ON 12V
-    delayMicroseconds(10);                        // Krátka pauza po príchode 12V
+    delayMicroseconds(10);                        // Short delay on apply 12V
+    // if (digitalRead(VPP_CSENSE)) {                // Check if 12V not high currency
+    //   digitalWrite(HVxP_ON_12V, HIGH);            // and disable 12V if high currency
+    //   setupHVxP(currentMCUpackage, false);
+    //   STKError = msgBuffer[0];
+    //   msgLength = 2;
+    //   msgBuffer[1] = STATUS_CMD_FAILED;
+    //   return;
+    // }
 
     // 4. Dokončenie sekvencie vstupu
     // Niektoré čipy vyžadujú počas držania 12V krátky pulz na XTAL alebo WR
     digitalWrite(HVPP.WR, HIGH);
     digitalWrite(HVPP.OE, HIGH);
     
-    // Počkáme, kým čip potvrdí pripravenosť (ak RDY pin existuje)
+    // 5. Počkáme, kým čip potvrdí pripravenosť (ak RDY pin existuje)
     uint16_t timeout = 100;  // 1 ms
     while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
-        delayMicroseconds(10);
-        timeout--;
+      delayMicroseconds(10);
+      timeout--;
     }
 
     progMode = STK_PROGMODE_HVPP;
@@ -1241,7 +1267,6 @@ Index  Názov param. Dĺžka Popis
       STKError = msgBuffer[0];
       msgLength = 2;
       msgBuffer[1] = STATUS_CMD_TOUT;
-      messageSend();
       return;
     }
 

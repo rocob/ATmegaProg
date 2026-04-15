@@ -1,10 +1,10 @@
 /*
   ATmegaProg
-  HW v1.0 , FW v1.0.0
+  HW v1.0 , FW v1.0.2
 
   created 2026.03.03
   by Robert Kovaľ <http://www.toroproduction.sk>
-  modified 2026.03.26
+  modified 2026.04.12
   by Robert Kovaľ
 
   This is private source code
@@ -39,7 +39,15 @@
 */
 
 #define PARAM_BUILD_NUMBER_HIGH_VAL 1
-#define PARAM_BUILD_NUMBER_LOW_VAL  (16 * 0 + 0)  // max 15 + 15
+#define PARAM_BUILD_NUMBER_LOW_VAL  (16 * 0 + 2)  // max 15 + 15
+
+#define HWVERSION     2
+#define SWMAJOR       2   // 1
+#define SWMINOR       10  // 18
+
+//#define HWVERSION     0
+//#define SWMAJOR       1
+//#define SWMINOR       41
 
 
 #include "Arduino.h"
@@ -64,12 +72,16 @@ Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, 
   #define SELB        7
   #define SELC        8
   #define HVxP_ON_12V 9
-  #define LED_HB      13
-  #define LED_ERR     5
-  #define LED_PMODE   0
+  #define VPP_CSENSE  2
+  #define VTG_VSENSE  40
+  #define LED_RUN     13  // 5
+  #define LED_ERR     4
+  #define LED_PROG    3
   #define KEY_UP      12
   #define KEY_DOWN    11
   #define KEY_OK      10
+  #define VTG_PIN     69  // A16
+  #define VTG_REF     INTERNAL2V56 // DEFAULT 
 
   const uint8_t ZIF[41] = { 0, // pin 0 not exist
     54, 55, 56, 57, 58, 59, 60, 61, // PF
@@ -89,10 +101,6 @@ Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, 
 #else
   #error Only ATmega2560 MCU Support!!!
 #endif
-
-#define HWVERSION     2
-#define SWMAJOR       2   // 1
-#define SWMINOR       10  // 18
 
 #undef SERIAL
 #ifdef SERIAL_PORT_USBVIRTUAL
@@ -119,7 +127,7 @@ char deviceNameText[15];
 
 bool newClear = true;
 //bool enMCUview = true;
-bool STKdump = false;
+bool STKdump = true;
 uint32_t detectTime = 0;
 
 uint8_t viewMode = 0;
@@ -145,11 +153,12 @@ void lcdPrintLogo() {
   display.setTextSize(1);
 }
 
-void lcdPrintHex(uint32_t c, bool disp = true) {
+void lcdPrintHex(uint32_t c, char e = ' ') {
   if (c < 16) display.print(0);
   display.print(c, HEX);
-  display.print(" ");
-  if (disp) display.display();
+  display.print(e);
+  // if (disp) 
+  display.display();
 }
 
 void lcdPrintln(char* c) {
@@ -206,9 +215,10 @@ void viewMCU(uint8_t s, uint8_t type, uint8_t model) {
     } else {
       display.setCursor(12, 12),
       display.print("Unknown ");
-      lcdPrintHex(signature[0]);
-      lcdPrintHex(signature[1]);
-      lcdPrintHex(signature[2]);
+      for (uint8_t i = 0; i < 3; i++) {
+        if (signature[i] < 16) display.print(0);
+        display.print(signature[i], HEX);
+      }
     }
   } else {
     display.setCursor(48, 12);
@@ -236,6 +246,14 @@ char* calcSize(uint8_t s) {
   }
 }
 
+uint8_t voltageSense() {
+  pinMode(VTG_PIN, INPUT);
+  digitalWrite(VTG_VSENSE, HIGH);
+  delayMicroseconds(10);
+  uint16_t v = analogRead(VTG_PIN);
+  digitalWrite(VTG_VSENSE, LOW);
+  return v/20;
+}
 
 
 
@@ -280,18 +298,23 @@ void setup() {
   pinMode(SELC, OUTPUT);
   pinMode(HVxP_ON_12V, OUTPUT);
 
+  // Voltage & Currency Sense setup
+  digitalWrite(VTG_VSENSE, LOW);    // Disable Voltage Sense
+  pinMode(VTG_VSENSE, OUTPUT);
+  pinMode(VPP_CSENSE, INPUT);
+  analogReference(VTG_REF);
+  // analogReadResolution(10);
+
   // LEDs setup
   digitalWrite(LED_ERR, LOW);
-  pinMode(LED_HB, OUTPUT);
+  pinMode(LED_RUN, OUTPUT);
   pinMode(LED_ERR, OUTPUT);
-  pinMode(LED_PMODE, OUTPUT);
+  pinMode(LED_PROG, OUTPUT);
 
   // Keys setup
   pinMode(KEY_UP  , INPUT_PULLUP);
   pinMode(KEY_DOWN, INPUT_PULLUP);
   pinMode(KEY_OK  , INPUT_PULLUP);
-
-  //SPI.begin(PIN_MOSI, PIN_MISO, PIN_SCK, PIN_RESET);
 
   // ZIF40 setup
   for (uint8_t i = 1; i < 41; i++) {
@@ -307,6 +330,17 @@ void setup() {
   bool targetISP = ZIF40;
 
   //setupTimer(ZIF[39]);
+
+  // test VTG
+  display.setCursor(0, 24);
+  uint8_t vtg = voltageSense();
+  display.print("ISP VTARGET: ");
+  display.print(vtg/10);
+  display.print(".");
+  display.print(vtg%10);
+  display.print("V");
+  display.display();
+  
 }
 
 
@@ -315,9 +349,9 @@ void loop() {
   uint32_t now = millis();
   // is pmode active?
   if (progMode) {
-    digitalWrite(LED_PMODE, HIGH);
+    digitalWrite(LED_PROG, HIGH);
   } else {
-    digitalWrite(LED_PMODE, LOW);
+    digitalWrite(LED_PROG, LOW);
 
     if (digitalRead(KEY_UP) == LOW) {
       // key up
@@ -342,9 +376,10 @@ void loop() {
       display.print("Flash: ");
       display.println(calcSize(signature[1]));
       display.print("Sign : ");
-      lcdPrintHex(signature[0], false);
-      lcdPrintHex(signature[1], false);
-      lcdPrintHex(signature[2], false);
+      for (uint8_t i = 0; i < 3; i++) {
+        if (signature[i] < 16) display.print(0);
+        display.print(signature[i], HEX);
+      }
       display.display();
 
     } else if (viewMode == VIEW_MODE_PACKAGE && \
@@ -388,7 +423,7 @@ void loop() {
   }
 
   // light the heartbeat LED
-  heartbeat(LED_HB);
+  heartbeat(LED_RUN);
 
   if (SERIAL.available()) {
     stk500v2_process();

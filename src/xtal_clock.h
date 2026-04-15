@@ -32,11 +32,11 @@ void setupTimer(uint8_t p) {
     TIMSK2 = 0;
     return;
   }
-  pinMode(p, OUTPUT);       // Enable timaer
+  pinMode(p, OUTPUT);       // Enable output clock
   cli();
   TCCR2A = (1 << WGM21);    // CTC mód
   TCCR2B = (1 << CS20);     // Prescaler = 1 (16 MHz)  // PARAM_OSC_PSCALE_VAL
-  // TCCR2B = (1 << CS21);  // Prescaler = 8
+  // TCCR2B = (1 << CS21);     // Prescaler = 8
   OCR2A = 80;               // PARAM_OSC_CMATCH_VAL
                             // Skúste hodnotu 10 pre cca 720 kHz (na hrane stability)
                             // value 80 eq 10 us == 100 kHz

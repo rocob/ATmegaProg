@@ -4,7 +4,7 @@
 
   created 2026.03.03
   by Robert Kovaľ <http://www.toroproduction.sk>
-  modified 2026.04.03
+  modified 2026.04.12
   by Robert Kovaľ
 
   This is private source code
@@ -14,7 +14,6 @@
   See LICENSE.txt for details.
 */
 
-
 #include "Arduino.h"
 #include <avr/pgmspace.h>
 
@@ -22,27 +21,118 @@ struct AVRDevice {
   uint8_t sig2;   // second byte signature
   uint8_t sig3;   // third  byte signature
   uint8_t pack1;  // package type 1
-  uint8_t pack2;  // package type 2
+  uint8_t pack2;  // not used, (future)
   char name[16];  // MCU name (max 15 characters + \0)
 };
 
 const AVRDevice signatureTable[] PROGMEM = {
-  // ATmega 8 (DIP28)
-  {0x93, 0x07, 1 , 0 , "ATmega8/L/A"    },
 
-  // ATmega 48 / 88 / 168 / 328 (DIP28)
-  {0x92, 0x05, 1 , 0 , "ATmega48/A"     },
-  {0x92, 0x0A, 1 , 0 , "ATmega48P"      },
-  {0x92, 0x10, 1 , 0 , "ATmega48PB"     },
-  {0x93, 0x0A, 1 , 0 , "ATmega88/A"     },
-  {0x93, 0x0F, 1 , 0 , "ATmega88P"      },
-  {0x93, 0x16, 1 , 0 , "ATmega88PB"     },
-  {0x94, 0x06, 1 , 0 , "ATmega168/A"    },
-  {0x94, 0x0B, 1 , 0 , "ATmega168P"     },
-  {0x94, 0x15, 1 , 0 , "ATmega168PB"    },
-  {0x95, 0x14, 1 , 0 , "ATmega328"      },
-  {0x95, 0x0F, 1 , 0 , "ATmega328P"     },  // 328P tested ISP, HVPP
-  {0x95, 0x16, 1 , 0 , "ATmega328PB"    },
+  //***************************************************************************
+  //* MCS-51               Old AT89 non AVR models                            *
+  //***************************************************************************
+
+
+  // AT89 (DIP40, TQFP44, PLCC44)
+  {0x51, 0x06, 0 , 0 , "AT89S51"        },  // 0x000, 0x100, 0x200
+  {0x51, 0x07, 0 , 0 , "AT89C51RC"      },  // 0x000, 0x100, 0x200
+  {0x52, 0x06, 0 , 0 , "AT89S52"        },  // 0x000, 0x100, 0x200
+  {0x55, 0x06, 0 , 0 , "AT89C55WD"      },  // 0x000, 0x100, 0x200
+  {0x61, 0x06, 0 , 0 , "AT89LS51"       },  // 0x000, 0x100, 0x200
+  {0x62, 0x06, 0 , 0 , "AT89LS52"       },  // 0x000, 0x100, 0x200
+  {0x63, 0x00, 0 , 0 , "AT89LS53"       },  // 0x30, 0x31
+  {0x53, 0x00, 0 , 0 , "AT89S53"        },  // 0x30, 0x31
+  {0x72, 0x00, 0 , 0 , "AT89S8252"      },  // 0x30, 0x31
+  {0x73, 0x00, 0 , 0 , "AT89S8253"      },  // 0x30, 0x31
+
+  {0x51, 0xFF, 0 , 0 , "AT89C51"        },  // 0x30, 0x31, 0x32
+  {0x51, 0x05, 0 , 0 , "AT89C51-5"      },  // 0x30, 0x31, 0x32
+  {0x52, 0xFF, 0 , 0 , "AT89C52"        },  // 0x30, 0x31, 0x32
+  {0x52, 0x05, 0 , 0 , "AT89C52-5"      },  // 0x30, 0x31, 0x32
+  {0x55, 0xFF, 0 , 0 , "AT89C55"        },  // 0x30, 0x31, 0x32
+  {0x55, 0x05, 0 , 0 , "AT89C55-5"      },  // 0x30, 0x31, 0x32
+
+  {0x61, 0xFF, 0 , 0 , "AT89LV51"       },  // 0x30, 0x31, 0x32
+  {0x62, 0xFF, 0 , 0 , "AT89LV52"       },  // 0x30, 0x31, 0x32
+  {0x65, 0xFF, 0 , 0 , "AT89LV55"       },  // 0x30, 0x31, 0x32
+  {0x54, 0x05, 0 , 0 , "AT89LP51"       },  // 0x00, 0x01, 0x02
+  {0x54, 0x06, 0 , 0 , "AT89LP52"       },  // 0x00, 0x01, 0x02
+  {0x32, 0xFC, 0 , 0 , "AT89LP3240"     },  // 0x00, 0x01, 0x02
+  {0x64, 0xFF, 0 , 0 , "AT89LP6440"     },  // 0x00, 0x01, 0x02
+
+  // AT89 (DIP14, TSSOP14)
+  {0x27, 0xFF, 0 , 0 , "AT89LP213"      },  // 0x00, 0x01, 0x02
+  {0x28, 0xFF, 0 , 0 , "AT89LP214"      },  // 0x00, 0x01, 0x02
+
+  // AT89 (DIP16, SOIC16, TSSOP16)
+  {0x29, 0xFF, 0 , 0 , "AT89LP216"      },  // 0x00, 0x01, 0x02
+
+  // AT89 (DIP20, SOIC20)
+  {0x11, 0x00, 0 , 0 , "AT89C1051"      },  // 0x00, 0x01
+  {0x21, 0x00, 0 , 0 , "AT89C2051"      },  // 0x00, 0x01
+  {0x41, 0x00, 0 , 0 , "AT89C4051"      },  // 0x00, 0x01
+  {0x23, 0xFF, 0 , 0 , "AT89S2051"      },  // 0x00, 0x01, 0x02
+  {0x43, 0xFF, 0 , 0 , "AT89S4051"      },  // 0x00, 0x01, 0x02
+  {0x25, 0xFF, 0 , 0 , "AT89LP2052"     },  // 0x00, 0x01, 0x02
+  {0x45, 0xFF, 0 , 0 , "AT89LP4052"     },  // 0x00, 0x01, 0x02
+
+  // AT89 (DIP28, TQFP32, PLCC32, MLF32)
+  {0x40, 0xFF, 0 , 0 , "AT89LP428"      },  // 0x00, 0x01, 0x02
+  {0x42, 0xFF, 0 , 0 , "AT89LP828"      },  // 0x00, 0x01, 0x02
+
+
+
+
+
+  //***************************************************************************
+  //* AVR                       Old AT90 models                               *
+  //***************************************************************************
+  
+  // AT90 (DIP20, SOIC20)
+  {0x90, 0x01, 2 , 0 , "AT90S1200/A"    },  // chip erase no polling
+  {0x91, 0x01, 2 , 0 , "AT90S2313"      },  // 
+  
+  // AT90 (DIP8, SOIC8)
+  {0x91, 0x02, 0 , 0 , "AT90S2323"      },  // 
+  {0x91, 0x03, 0 , 0 , "AT90S2343"      },  // 
+
+  // AT90 (DIP28, TQFP32)
+  {0x91, 0x05, 0 , 0 , "AT90S2333"      },  // 
+  {0x92, 0x03, 0 , 0 , "AT90S4433"      },  // 
+
+  // AT90 (DIP40, TQFP44, PLCC44)
+  {0x92, 0x01, 0 , 0 , "AT90S4414"      },  // 
+  {0x93, 0x01, 0 , 0 , "AT90S8515"      },  // 
+  {0x92, 0x02, 0 , 0 , "AT90S4434"      },  // 
+  {0x93, 0x03, 0 , 0 , "AT90S8535"      },  // 
+
+  // AT90 (USB)
+  {0x93, 0x82, 0 , 0 , "AT90USB82"      },  // QFN32
+  {0x94, 0x82, 0 , 0 , "AT90USB162"     },  // QFN32, TQFP32
+  {0x96, 0x82, 0 , 0 , "AT90USB646/7"   },  // QFN64, TQFP64
+  {0x97, 0x82, 0 , 0 , "AT90USB1286/7"  },  // QFN64, TQFP64, VQFN64
+
+  /* AT90 (CAN)
+    0x1e 0x95 0x81; AT90CAN32 TQFP64
+    0x1e 0x96 0x81; AT90CAN64 TQFP64
+    0x1e 0x97 0x81; AT90CAN128 TQFP64
+  */
+
+  /* AT90 (PWM)
+    0x1e 0x93 0x88; AT90PWM81 QFN32, SOIC20
+    0x1e 0x94 0x8b; AT90PWM161 QFN32, SOIC20
+    0x1e 0x93 0x83; AT90PWM1 QFN32, SOIC24
+    0x1e 0x93 0x81; AT90PWM2 SOIC24
+    0x1e 0x93 0x83; AT90PWM2B SOIC32, SOIC24
+    0x1e 0x93 0x81; AT90PWM3 QFN32, SOIC32
+    0x1e 0x93 0x83; AT90PWM3B QFN32, SOIC32
+    0x1e 0x94 0x83; AT90PWM216 SOIC24
+                    AT90PWM316 QFN32, SOIC32
+  */
+
+
+  //***************************************************************************
+  //* AVR                       ATtiny models                                 *
+  //***************************************************************************
 
   // ATtiny 28 (DIP28)
   {0x91, 0x07, 1 , 0 , "ATtiny28L/V"    },  // only HVPP, not yet tested
@@ -85,16 +175,51 @@ const AVRDevice signatureTable[] PROGMEM = {
   {0x92, 0x06, 5 , 0 , "ATtiny45/V"     },
   {0x93, 0x0B, 5 , 0 , "ATtiny85/V"     },
 
-  // ATtiny 43U         // SO20
-  // ATtiny 87 / 167    // SO20
-  // ATtiny 441 / 841   // SO14
-  // ATtiny 828         // TQFP32
-  // ATtiny 1634        // SO20
+  /* others models - unsorted
+  {0x92, 0x0C, 0 , 0 , "ATtiny43U"      },  // SO20
+  {0x93, 0x87, 0 , 0 , "ATtiny87"       },  // SO20
+  {0x94, 0x87, 0 , 0 , "ATtiny167"      },  // SO20
+  {0x92, 0x15, 0 , 0 , "ATtiny441"      },  // SO14
+  {0x93, 0x15, 0 , 0 , "ATtiny841"      },  // SO14
+  {0x93, 0x14, 0 , 0 , "ATtiny828"      },  // TQFP32
+  {0x94, 0x12, 0 , 0 , "ATtiny1634"     },  // SO20
+  */
+
+
+  //***************************************************************************
+  //* AVR                       ATmega models                                 *
+  //***************************************************************************
+
+  // ATmega 8 (DIP28, TQFP32)
+  {0x93, 0x07, 1 , 0 , "ATmega8/L/A"    },  // DIP28, TQFP32, QFN32, VQFN32, MLF32
+
+  // ATmega 48 / 88 / 168 / 328 (DIP28, TQFP32)
+  {0x92, 0x05, 1 , 0 , "ATmega48/A"     },
+  {0x92, 0x0A, 1 , 0 , "ATmega48P"      },
+  {0x92, 0x10, 1 , 0 , "ATmega48PB"     },
+  {0x93, 0x0A, 1 , 0 , "ATmega88/A"     },
+  {0x93, 0x0F, 1 , 0 , "ATmega88P"      },
+  {0x93, 0x16, 1 , 0 , "ATmega88PB"     },
+  {0x94, 0x06, 1 , 0 , "ATmega168/A"    },
+  {0x94, 0x0B, 1 , 0 , "ATmega168P"     },
+  {0x94, 0x15, 1 , 0 , "ATmega168PB"    },
+  {0x95, 0x14, 1 , 0 , "ATmega328"      },
+  {0x95, 0x0F, 1 , 0 , "ATmega328P"     },  // 328P tested ISP, HVPP
+  {0x95, 0x16, 1 , 0 , "ATmega328PB"    },
+
+  // ATmega 161 / 163 / 323 (DIP40)
+  {0x94, 0x01, 0 , 0 , "ATmega161/L"    },  // DIP40, TQFP44
+  {0x94, 0x02, 0 , 0 , "ATmega163/L"    },  // DIP40, TQFP44
+  {0x95, 0x01, 0 , 0 , "ATmega323/L"    },  // DIP40, TQFP44
 
   // ATmega 16 / 32 / 8535 (DIP40)
-  {0x94, 0x03, 6 , 0 , "ATmega16/A"     },  // not yet tested
-  {0x95, 0x02, 6 , 0 , "ATmega32/A"     },
-  {0x93, 0x08, 6 , 0 , "ATmega8535/L"   },
+  {0x94, 0x03, 6 , 0 , "ATmega16/L/A"   },  // DIP40, TQFP44, VQFN44, MLF44
+  {0x95, 0x02, 6 , 0 , "ATmega32/L/A"   },  // DIP40, TQFP44, VQFN44, MLF44
+  {0x93, 0x08, 6 , 0 , "ATmega8535/L"   },  // DIP40, TQFP44, PLCC44, QFN44, VFQFN44, MLF44
+  
+  // ATmega 162 / 8515  (DIP40)
+  {0x94, 0x04, 7 , 0 , "ATmega162/V"    },  // DIP40, TQFP44, VFQFN44
+  {0x93, 0x06, 7 , 0 , "ATmega8515/L"   },  // DIP40, TQFP44, PLCC44, QFN44, VFQFN44, MLF44
 
   // ATmega 164 / 324 / 644 / 1284 (DIP40)
   {0x94, 0x0A, 6 , 0 , "ATmega164P/PA"  },  // not yet tested
@@ -107,29 +232,112 @@ const AVRDevice signatureTable[] PROGMEM = {
   {0x96, 0x09, 6 , 0 , "ATmega644A"     },
   {0x97, 0x05, 6 , 0 , "ATmega1284P"    },
   {0x97, 0x06, 6 , 0 , "ATmega1284"     },
+  
+  // special models
+  // 0x93, 0x10, ATmega8HVA   WFLGA36, TSSOP28
+  // 0x94, 0x0C, ATmega16HVA  WFLGA36, TSSOP28
+  // 0x94, 0x0D, ATmega16HVB  TFSOP44
+  // 0x95, 0x10, ATmega32HVB  TFSOP44
+  // 0x95, 0x13, ATmega32HVE2 VFQFN48
+  // 0x96, 0x10, ATmega64HVE2 VFQFN48
 
-  // ATmega 162 / 8515  (DIP40)
-  {0x94, 0x04, 7 , 0 , "ATmega162/V"    },  // not yet tested
-  {0x93, 0x06, 7 , 0 , "ATmega8515/L"   },
+  // 0x1e 0x94 0x84;  ATmega16M1  TQFP32, QFN32
+  // 0x1e 0x95 0x84;  ATmega32M1  TQFP32, QFN32
+  // 0x1e 0x95 0x86;  ATmega32C1  TQFP32, QFN32, VQFN32
+  // 0x1e 0x96 0x84;  ATmega64M1  TQFP32, QFN32, VQFN32
+  // 0x1e 0x96 0x86;  ATmega64C1  TQFP32, QFN32, VQFN32
+  // 
+
+  //***************************************************************************
+  //* AVR                     BIG ATmega models                               *
+  //***************************************************************************
+
+  // ATmega 406 (LQFP48) with 4 cells battery managment
+  {0x95, 0x07, 0 , 0 , "ATmega406"      },  // atyp with 40kB flash
+
+  // ATmega 64 / 128 (TQFP64)
+  {0x97, 0x01, 0 , 0 , "ATmega103"      },
+
+  {0x96, 0x02, 0 , 0 , "ATmega64/L"     },  // TQFP64, QFN64, VQFN64, MLF64
+  {0x97, 0x02, 0 , 0 , "ATmega128/L"    },  // TQFP64, MLF64
+  
+  {0x97, 0x04, 0 , 0 , "ATmega1281"     }, // TQFP64, QFN64, MLF64
+  {0x98, 0x02, 0 , 0 , "ATmega2561"     }, // TQFP64, QFN64, MLF64
+  
+  {0x94, 0x05, 0 , 0 , "ATmega169/L/V"  },
+  {0x94, 0x11, 0 , 0 , "ATmega169A"     },
+  {0x95, 0x03, 0 , 0 , "ATmega329/V"    },
+  {0x95, 0x0B, 0 , 0 , "ATmega329P"     },
+  {0x96, 0x03, 0 , 0 , "ATmega649/V"    },
+  {0x96, 0x0B, 0 , 0 , "ATmega649P"     },
+  
+  {0x94, 0x07, 0 , 0 , "ATmega165/V"    },
+  {0x94, 0x10, 0 , 0 , "ATmega165P"     },
+  {0x95, 0x05, 0 , 0 , "ATmega325/V"    },
+  {0x95, 0x0D, 0 , 0 , "ATmega325P"     },
+  {0x96, 0x05, 0 , 0 , "ATmega645/V"    },
+  {0x96, 0x0D, 0 , 0 , "ATmega645P"     },
+  
+  // ATmega 640 / 1280 / 2560 (TQFP100)
+  {0x96, 0x08, 0 , 0 , "ATmega640"      },  // TQFP100, CBGA100, TFBGA100
+  {0x97, 0x03, 0 , 0 , "ATmega1280"     },  // TQFP100, CBGA100
+  {0x98, 0x01, 0 , 0 , "ATmega2560"     },  // TQFP100, CBGA100
+
+  {0x95, 0x04, 0 , 0 , "ATmega3290/V"   },
+  {0x95, 0x0C, 0 , 0 , "ATmega3290P"    },
+  {0x96, 0x04, 0 , 0 , "ATmega6490/V"   },
+  {0x96, 0x0C, 0 , 0 , "ATmega6490P"    },
+  
+  {0x95, 0x06, 0 , 0 , "ATmega3250/A"   },
+  {0x95, 0x0E, 0 , 0 , "ATmega3250P"    },
+  {0x96, 0x06, 0 , 0 , "ATmega6450/A"   },
+  {0x96, 0x0E, 0 , 0 , "ATmega6450P"    },
+  
+  // USB models
+  {0x93, 0x89, 0 , 0 , "ATmega8U2"      },  // TQFP32, QFN32, LQFP32, VQFN32
+  {0x94, 0x89, 0 , 0 , "ATmega16U2"     },  // TQFP32, QFN32
+  {0x95, 0x8A, 0 , 0 , "ATmega32U2"     },  // TQFP32, QFN32
+  {0x94, 0x88, 0 , 0 , "ATmega16U4"     },  // TQFP44, QFN44, VQFN44
+  {0x95, 0x87, 0 , 0 , "ATmega32U4"     },  // TQFP44, QFN44
+
+  /* special models for in-vehicle LIN networks
+    0x1e 0x93 0x0a; ATA6612C    VFQFN48 (mega88)
+    0x1e 0x94 0x06; ATA6613C    VFQFN48 (mega168)
+    0x1e 0x95 0x0F; ATA6614Q    VFQFN48 (mega328P)
+    0x1e 0x93 0x87; ATA6616C    VFQFN38
+    0x1e 0x94 0x87; ATA6617C    VFQFN38
+    0x1e 0x94 0x87; ATA5505     VFQFN38
+    0x1e 0x94 0x87; ATA664251   VFQFN38
+    
+  */
+
+  //***************************************************************************
+  //*                        ATtiny new TPI models                            *
+  //***************************************************************************
 
   // ATtiny 102 / 104 (TPI)
   {0x90, 0x0C, 8 , 0 , "ATtiny102"      },  // SO8 - is being prepared
-  {0x90, 0x0B, 9 , 0 , "ATtiny104"      }   // SO14
-  // ATtiny4 0x1E 0x8F 0x0A   // SOT23-6
-  // ATtiny5 0x1E 0x8F 0x09
-  // ATtiny9 0x1E 0x90 0x08
-  // ATtiny10 0x1E 0x90 0x03
-  // ATtiny20 0x1E 0x91 0x0F  // SO14, TSSOP14
-  // ATtiny40 0x1E 0x92 0x0E  // SO20, TSSOP20
+  {0x90, 0x0B, 9 , 0 , "ATtiny104"      },  // SO14
+  // 0x1E 0x8F 0x0A ATtiny4   // SOT23-6
+  // 0x1E 0x8F 0x09 ATtiny5 
+  // 0x1E 0x90 0x08 ATtiny9 
+  // 0x1E 0x90 0x03 ATtiny10 
+  // 0x1E 0x91 0x0F ATtiny20  // SO14, TSSOP14
+  // 0x1E 0x92 0x0E ATtiny40  // SO20, TSSOP20
+  
+  // Logic Green parts
+  {0x93, 0x0F, 1 , 0 , "LGT8F88P"       },  // same as ATmega88P
+  {0x94, 0x0B, 1 , 0 , "LGT8F168P"      },  // same as ATmega168P
+  {0x95, 0x0F, 1 , 0 , "LGT8F328P"      }   // same as ATmega328P
 };
 
 const int deviceCount = sizeof(signatureTable) / sizeof(AVRDevice);
 
 
 
-//*********************************************************************
-//                        Power & ISP                                 *
-//*********************************************************************
+//*****************************************************************************
+//                              Power & ISP                                   *
+//*****************************************************************************
 struct AVRPackage {
   uint8_t size;
   uint8_t GND1;
@@ -160,7 +368,7 @@ const AVRPackage packageTable[] PROGMEM = {
   { 40,   20,   0 ,   40,   0 ,   9 ,   9 ,   6 ,   7 ,   8 ,   19,   0 },  //  7 ATmega162/8515
 
 // TPI
-// size, GND1, GND2, VCC1, VCC2, HVPP, RST , MOSI, MISO, SCK , XTAL, UPDI,
+// size, GND1, GND2, VCC1, VCC2, HVPP, RST ,0=TPI, DATA, CLK , XTAL, UPDI,
   { 8 ,   8 ,   0 ,   1 ,   0 ,   4 ,   4 ,   0 ,   3 ,   2 ,   0 ,   0 },  //  8 ATtiny102
   { 14,   14,   0 ,   1 ,   0 ,   4 ,   4 ,   0 ,   3 ,   2 ,   0 ,   0 }   //  9 ATtiny104
 };
@@ -169,7 +377,6 @@ const int packageCount = sizeof(packageTable) / sizeof(AVRPackage);
 
 
 
-// Pracovné pole v RAM, kam skopírujeme riadok
 AVRPackage currentMCU;
 uint8_t currentMCUpackage = 0;
 
@@ -243,9 +450,9 @@ bool findDevice(uint8_t s2, uint8_t s3) {
 
 
 
-//*********************************************************************
-//                           HVPP / HVSP                              *
-//*********************************************************************
+//*****************************************************************************
+//                               HVPP / HVSP                                  *
+//*****************************************************************************
 
 
 struct HVSP_Pins {
@@ -454,9 +661,9 @@ byte setupHVxP(uint8_t p, bool connect = true) {
 
 
 
-//*********************************************************************
-//                            Detect MCU                              *
-//*********************************************************************
+//*****************************************************************************
+//                                Detect MCU                                  *
+//*****************************************************************************
 bool detectedPins[41];
 
 
