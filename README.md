@@ -18,18 +18,18 @@ A CMOS 4053 switch is used to switch the pin between the mega2560 MCU and the Hi
 
 ## Currently supported microprocessors:
 ```
-ATmega168/A
-ATmega168P
+ATmega168/A     tested ISP, HVPP
+ATmega168P      tested ISP, HVPP
 ATmega168PB
-ATmega328
+ATmega328       tested ISP, HVPP
 ATmega328P      tested ISP, HVPP
 ATmega328PB
-ATmega48/A
-ATmega48P
+ATmega48/A      tested ISP, HVPP
+ATmega48P       tested ISP, HVPP
 ATmega48PB
 ATmega8/L/A     tested ISP, HVPP
-ATmega88/A
-ATmega88P
+ATmega88/A      tested ISP, HVPP
+ATmega88P       tested ISP, HVPP
 ATmega88PB
 
 ATtiny11/L      only HVSP, not yet tested
@@ -37,19 +37,19 @@ ATtiny12/L/V
 ATtiny13/A
 ATtiny15/L
 ATtiny22/L
-ATtiny2313/A
-ATtiny24/A/V
+ATtiny2313/A    tested ISP, HVPP
+ATtiny24/A/V    tested ISP, HVPP
 ATtiny25/V"     tested ISP, HVSP
 ATtiny26/L      tested ISP, HVPP
 ATtiny261/A
 ATtiny28L/V     only HVPP, not yet tested
 ATtiny4313      tested ISP, HVPP
-ATtiny44/A/V
-ATtiny45/V
+ATtiny44/A/V    tested ISP, HVPP
+ATtiny45/V      tested ISP, HVPP
 ATtiny461/A
 ATtiny48
 ATtiny84/A/V    tested ISP, HVSP
-ATtiny85/V
+ATtiny85/V      tested ISP, HVPP
 ATtiny88
 ATtiny861/A
 
