@@ -27,7 +27,7 @@ ATmega328PB
 ATmega48/A
 ATmega48P
 ATmega48PB
-ATmega8/L/A
+ATmega8/L/A     tested ISP, HVPP
 ATmega88/A
 ATmega88P
 ATmega88PB
