@@ -92,18 +92,18 @@ const AVRDevice signatureTable[] PROGMEM = {
   {0x91, 0x01, 2 , 0 , "AT90S2313"      },  // 
   
   // AT90 (DIP8, SOIC8)
-  {0x91, 0x02, 0 , 0 , "AT90S2323"      },  // 
-  {0x91, 0x03, 0 , 0 , "AT90S2343"      },  // 
+  {0x91, 0x02, 5 , 0 , "AT90S2323"      },  // 
+  {0x91, 0x03, 5 , 0 , "AT90S2343"      },  // 
 
   // AT90 (DIP28, TQFP32)
-  {0x91, 0x05, 0 , 0 , "AT90S2333"      },  // 
-  {0x92, 0x03, 0 , 0 , "AT90S4433"      },  // 
+  {0x91, 0x05, 1 , 0 , "AT90S2333"      },  // 
+  {0x92, 0x03, 1 , 0 , "AT90S4433"      },  // 
 
   // AT90 (DIP40, TQFP44, PLCC44)
-  {0x92, 0x01, 0 , 0 , "AT90S4414"      },  // 
-  {0x93, 0x01, 0 , 0 , "AT90S8515"      },  // 
-  {0x92, 0x02, 0 , 0 , "AT90S4434"      },  // 
-  {0x93, 0x03, 0 , 0 , "AT90S8535"      },  // 
+  {0x92, 0x01, 7 , 0 , "AT90S4414"      },  // 
+  {0x93, 0x01, 7 , 0 , "AT90S8515"      },  // 
+  {0x92, 0x02, 6 , 0 , "AT90S4434"      },  // 
+  {0x93, 0x03, 6 , 0 , "AT90S8535"      },  // 
 
   // AT90 (USB)
   {0x93, 0x82, 0 , 0 , "AT90USB82"      },  // QFN32
@@ -402,20 +402,20 @@ void setupISP(uint8_t p, bool connect = true) {
     memcpy_P(&currentMCU, &packageTable[p], sizeof(AVRPackage));
     uint8_t* ptr = (uint8_t*)&currentMCU;
     for (uint8_t i = 1; i < sizeof(AVRPackage); i++) {
-      ptr[i] = ZIF[getOffsetPin(ptr[i])];
+      ptr[i] = getOffsetPin(ptr[i]);
     }
 
     for (int i = 1; i < 41; i++) {    // All pins to GROUND
-      digitalWrite(ZIF[i], LOW); }
+      zifWrite(i, LOW); }
 
-      pinMode(currentMCU.GND1, OUTPUT);
+      zifMode(currentMCU.GND1, OUTPUT);
     if (currentMCU.GND2) {
-      pinMode(currentMCU.GND2, OUTPUT); }
-      digitalWrite(currentMCU.VCC1, HIGH);
-      pinMode(currentMCU.VCC1, OUTPUT);
+      zifMode(currentMCU.GND2, OUTPUT); }
+      zifWrite(currentMCU.VCC1, HIGH);
+      zifMode(currentMCU.VCC1, OUTPUT);
     if (currentMCU.VCC2) {
-      digitalWrite(currentMCU.VCC2, HIGH);
-      pinMode(currentMCU.VCC2, OUTPUT); }
+      zifWrite(currentMCU.VCC2, HIGH);
+      zifMode(currentMCU.VCC2, OUTPUT); }
 
     // Setup for ISP pins
     ZIF40_PIN_RESET = currentMCU.RESET;
@@ -425,7 +425,7 @@ void setupISP(uint8_t p, bool connect = true) {
   } else {
     // All pins OFF
     for (int i = 1; i < 41; i++) {
-      pinMode(ZIF[i], INPUT);
+      zifMode(i, INPUT);
     }
   }
 }
@@ -442,10 +442,10 @@ bool findDevice(uint8_t s2, uint8_t s3) {
       //char buffer[15];
       // Skopírujeme reťazec z Flash do RAM pre výpis
       strcpy_P(deviceNameText, signatureTable[i].name);
-      return 1;
+      return true;
     }
   }
-  return 0;
+  return false;
 }
 
 
@@ -510,56 +510,49 @@ HVSP_Pins HVSP;
 // Rýchle nastavenie celej 8-bitovej zbernice
 void dataMode(uint8_t mode) {
   if (HVPP.DATA[0] == 0) return;
-  for(int i=0; i<8; i++) pinMode(HVPP.DATA[i], mode);
+  for(int i=0; i<8; i++) zifMode(HVPP.DATA[i], mode);
 }
 
 void dataWrite(uint8_t value) {
   for(int i=0; i<8; i++) {
-    digitalWrite(HVPP.DATA[i], (value >> i) & 0x01);
+    zifWrite(HVPP.DATA[i], (value >> i) & 0x01);
   }
 }
 
 uint8_t dataRead() {
   uint8_t value = 0;
   for(int i=0; i<8; i++) {
-    if(digitalRead(HVPP.DATA[i])) value |= (1 << i);
+    if(zifRead(HVPP.DATA[i])) value |= (1 << i);
   }
   return value;
 }
 
 void toggleXTAL() {
-  digitalWrite(currentMCU.XTAL, HIGH);
+  zifWrite(currentMCU.XTAL, HIGH);
   delayMicroseconds(1);
-  digitalWrite(currentMCU.XTAL, LOW);
+  zifWrite(currentMCU.XTAL, LOW);
   delayMicroseconds(1);
 }
 
 void toggleSCI() {
-  digitalWrite(HVSP.SCI, HIGH);
+  zifWrite(HVSP.SCI, HIGH);
   delayMicroseconds(1);
-  digitalWrite(HVSP.SCI, LOW);
+  zifWrite(HVSP.SCI, LOW);
   delayMicroseconds(1);
 }
 
 void commitWrite(uint8_t pulseWidth = 0) {
-  digitalWrite(HVPP.WR, LOW);
+  zifWrite(HVPP.WR, LOW);
   if (pulseWidth) delay(pulseWidth);
   else delayMicroseconds(1);
-  digitalWrite(HVPP.WR, HIGH);
+  zifWrite(HVPP.WR, HIGH);
   // Čakanie na RDY pin, kým čip dokončí zápis
-  //while(digitalRead(HVPP.RDY) == LOW); 
+  //while(zifRead(HVPP.RDY) == LOW); 
 }
 
-uint8_t searchArduinoPin(uint8_t p) {
-  for (int i = 0; i < 41; i++) {
-    if (ZIF[i] == p) return i; }
-  return 0;
-}
-
-void HV_apply(uint8_t ap) {
+void HV_apply(uint8_t p) {
   digitalWrite(HVxP_ON_12V, HIGH);  // disable HV output
 
-  uint8_t p = searchArduinoPin(ap);
   if (p == 9) {
     digitalWrite(SELA, LOW);
     digitalWrite(SELB, LOW);
@@ -576,7 +569,7 @@ void HV_apply(uint8_t ap) {
     digitalWrite(SELA, HIGH);
     digitalWrite(SELB, HIGH);
     digitalWrite(SELC, LOW);
-  } else if (p == 41) {       // use for IDC06 Connector
+  } else if (p == 41) {       // used for IDC06 Connector
     digitalWrite(SELA, LOW);
     digitalWrite(SELB, LOW);
     digitalWrite(SELC, HIGH);
@@ -599,61 +592,61 @@ byte setupHVxP(uint8_t p, bool connect = true) {
     if (p == 0) return false;
     uint8_t* ptp = (uint8_t*)&currentMCU;
     for (uint8_t i = 1; i < sizeof(AVRPackage); i++) {
-      ptp[i] = ZIF[getOffsetPin(ptp[i])];
+      ptp[i] = getOffsetPin(ptp[i]);
     }
 
     memcpy_P(&HVPP, &HVxPpinsTable[p], sizeof(HVPP_Pins));
     uint8_t* ptr = (uint8_t*)&HVPP;
     for (uint8_t i = 0; i < sizeof(HVPP_Pins); i++) {
-      ptr[i] = ZIF[getOffsetPin(ptr[i])];
+      ptr[i] = getOffsetPin(ptr[i]);
     }
     
     for (int i = 1; i < 41; i++) {    // All pins to GROUND
-      digitalWrite(ZIF[i], LOW); }
+      zifWrite(i, LOW); }
 
     // Connect Ground pins
-    pinMode(currentMCU.GND1, OUTPUT);
+    zifMode(currentMCU.GND1, OUTPUT);
     if (currentMCU.GND2) {
-       pinMode(currentMCU.GND2, OUTPUT); }
+       zifMode(currentMCU.GND2, OUTPUT); }
     // Connect VCC pins
-    pinMode(currentMCU.VCC1, OUTPUT);
+    zifMode(currentMCU.VCC1, OUTPUT);
     if (currentMCU.VCC2) {
-      pinMode(currentMCU.VCC2, OUTPUT); }
+      zifMode(currentMCU.VCC2, OUTPUT); }
     // Connect Reset pin
-    pinMode(currentMCU.RESET, OUTPUT);
+    zifMode(currentMCU.RESET, OUTPUT);
 
     if (HVPP.DATA[0]) { 
       // HVPP - High Voltage Paralel programing
-      if (HVPP.PAGEL) pinMode(HVPP.PAGEL, OUTPUT);
-      if (HVPP.XA1)   pinMode(HVPP.XA1,   OUTPUT);
-      if (HVPP.XA0)   pinMode(HVPP.XA0,   OUTPUT);
-      if (HVPP.BS1)   pinMode(HVPP.BS1,   OUTPUT);
-      if (HVPP.BS2)   pinMode(HVPP.BS2,   OUTPUT);
-      if (HVPP.OE)    pinMode(HVPP.OE,    OUTPUT);
-      if (HVPP.WR)    pinMode(HVPP.WR,    OUTPUT);
+      if (HVPP.PAGEL) zifMode(HVPP.PAGEL, OUTPUT);
+      if (HVPP.XA1)   zifMode(HVPP.XA1,   OUTPUT);
+      if (HVPP.XA0)   zifMode(HVPP.XA0,   OUTPUT);
+      if (HVPP.BS1)   zifMode(HVPP.BS1,   OUTPUT);
+      if (HVPP.BS2)   zifMode(HVPP.BS2,   OUTPUT);
+      if (HVPP.OE)    zifMode(HVPP.OE,    OUTPUT);
+      if (HVPP.WR)    zifMode(HVPP.WR,    OUTPUT);
 
-      pinMode(HVPP.RDY, INPUT);
-      pinMode(currentMCU.XTAL, OUTPUT);
+      zifMode(HVPP.RDY, INPUT);
+      zifMode(currentMCU.XTAL, OUTPUT);
       dataMode(INPUT); // Default as Input
       return 1;
 
     } else {
       // HVSP - High Voltage Serial programing
       memcpy(&HVSP, &HVPP, sizeof(HVSP_Pins));
-      if (HVSP.PEN0) pinMode(HVSP.PEN0, OUTPUT);
-      if (HVSP.PEN1) pinMode(HVSP.PEN1, OUTPUT);
-      if (HVSP.PEN2) pinMode(HVSP.PEN2, OUTPUT);
-      if (HVSP.PEN3) pinMode(HVSP.PEN3, OUTPUT);
-      if (HVSP.SCI)  pinMode(HVSP.SCI, OUTPUT);
-      if (HVSP.SII)  pinMode(HVSP.SII, OUTPUT);
-      if (HVSP.SDI)  pinMode(HVSP.SDI, OUTPUT);
-      if (HVSP.SDO)  pinMode(HVSP.SDO, OUTPUT);
+      if (HVSP.PEN0) zifMode(HVSP.PEN0, OUTPUT);
+      if (HVSP.PEN1) zifMode(HVSP.PEN1, OUTPUT);
+      if (HVSP.PEN2) zifMode(HVSP.PEN2, OUTPUT);
+      if (HVSP.PEN3) zifMode(HVSP.PEN3, OUTPUT);
+      if (HVSP.SCI)  zifMode(HVSP.SCI, OUTPUT);
+      if (HVSP.SII)  zifMode(HVSP.SII, OUTPUT);
+      if (HVSP.SDI)  zifMode(HVSP.SDI, OUTPUT);
+      if (HVSP.SDO)  zifMode(HVSP.SDO, OUTPUT);
       return 2;
     }
   } else {
     // All pins OFF
     for (int i = 1; i < 41; i++) {
-      pinMode(ZIF[i], INPUT);
+      zifMode(i, INPUT);
     }
     return false;
   }
@@ -673,28 +666,28 @@ byte detectMCUsize() {
 
   // Step 1 - all pins to ground
   for (uint8_t i = 1; i < 41; i++) {
-    digitalWrite(ZIF[i], LOW);
-    pinMode(ZIF[i], OUTPUT);
+    zifWrite(i, LOW);
+    zifMode(i, OUTPUT);
     detectedPins[i] = false;
   }
 
   // Step 2 - detect bottom row
   for (uint8_t i = 20; i > 0; i--) {
-    pinMode(ZIF[i], INPUT_PULLUP);
+    zifMode(i, INPUT_PULLUP);
     //delayMicroseconds(10);
-    pin = digitalRead(ZIF[i]);
+    pin = zifRead(i);
     detectedPins[i] = pin;
-    pinMode(ZIF[i], OUTPUT);
+    zifMode(i, OUTPUT);
     //delay(10);
   }
 
   // Step 3 - detect upper row
   for (uint8_t i = 21; i < 41; i++) {
-    pinMode(ZIF[i], INPUT_PULLUP);
+    zifMode(i, INPUT_PULLUP);
     //delayMicroseconds(10);
-    pin = digitalRead(ZIF[i]);
+    pin = zifRead(i);
     detectedPins[i] = pin;
-    pinMode(ZIF[i], OUTPUT);
+    zifMode(i, OUTPUT);
     //delay(10);
   }
 
@@ -709,7 +702,7 @@ byte detectMCUsize() {
 
   // Step 5 - all pins OFF
   for (uint8_t i = 1; i < 41; i++) {
-    pinMode(ZIF[i], INPUT);
+    zifMode(i, INPUT);
   }
   return dpin;
 }

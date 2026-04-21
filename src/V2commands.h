@@ -91,21 +91,21 @@
 #define STATUS_CMD_UNKNOWN                  0xC9
 
 // *****************[ STK parameter constants ]***************************
-#define PARAM_BUILD_NUMBER_LOW              0x80
-#define PARAM_BUILD_NUMBER_HIGH             0x81
-#define PARAM_HW_VER                        0x90
-#define PARAM_SW_MAJOR                      0x91
-#define PARAM_SW_MINOR                      0x92
-#define PARAM_VTARGET                       0x94
-#define PARAM_VADJUST                       0x95
-#define PARAM_OSC_PSCALE                    0x96
-#define PARAM_OSC_CMATCH                    0x97
-#define PARAM_SCK_DURATION                  0x98
-#define PARAM_TOPCARD_DETECT                0x9A
-#define PARAM_STATUS                        0x9C
-#define PARAM_DATA                          0x9D
-#define PARAM_RESET_POLARITY                0x9E
-#define PARAM_CONTROLLER_INIT               0x9F
+#define PARAM_BUILD_NUMBER_LOW              0x80	// R
+#define PARAM_BUILD_NUMBER_HIGH             0x81	// R
+#define PARAM_HW_VER                        0x90	// R
+#define PARAM_SW_MAJOR                      0x91	// R
+#define PARAM_SW_MINOR                      0x92	// R
+#define PARAM_VTARGET                       0x94	// RW
+#define PARAM_VADJUST                       0x95	// RW
+#define PARAM_OSC_PSCALE                    0x96	// RW
+#define PARAM_OSC_CMATCH                    0x97	// RW
+#define PARAM_SCK_DURATION                  0x98	// RW
+#define PARAM_TOPCARD_DETECT                0x9A	// R
+#define PARAM_STATUS                        0x9C	// R
+#define PARAM_DATA                          0x9D	// R
+#define PARAM_RESET_POLARITY                0x9E	//  W
+#define PARAM_CONTROLLER_INIT               0x9F	// RW
 
 // *****************[ STK answer constants ]***************************
 

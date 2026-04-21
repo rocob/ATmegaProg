@@ -4,7 +4,7 @@
 
   created 2026.03.03
   by Robert Kovaľ <http://www.toroproduction.sk>
-  modified 2026.04.12
+  modified 2026.04.14
   by Robert Kovaľ
 
   This is private source code
@@ -38,9 +38,9 @@
 #include "Arduino.h"
 #include "V2commands.h"
 #include "SPI.h"
-#include "virtual_spi.h"
+#include "zif_io.h"
 #include "avr_setup.h"
-#include "xtal_clock.h"
+
 
 static BitBangedSPI VirtualSPI;
 
@@ -98,9 +98,9 @@ uint8_t PARAM_CONTROLLER_INIT_VAL = 0;  // RESET init value must by 0x00
 void resetTarget(bool val = true) {
   if (PARAM_RESET_POLARITY_VAL) val = !val;
   if (targetISP == IDC06)
-    digitalWrite(IDC06_PIN_RESET, val);
+    zifWrite(IDC06_PIN_RESET, val);
   else
-    digitalWrite(ZIF40_PIN_RESET, val);
+    zifWrite(ZIF40_PIN_RESET, val);
 }
 
 uint8_t spi_transaction(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
@@ -134,33 +134,33 @@ uint8_t spi_transaction(uint8_t *cmd, uint16_t index) {
 uint8_t doubleTransfer(uint8_t d, uint8_t i) {
   uint8_t o;
   uint8_t pulseWidth = 4;
-  digitalWrite(HVSP.SCI, HIGH);
+  zifWrite(HVSP.SCI, HIGH);
   delayMicroseconds(pulseWidth);
   for (byte j = 0; j < 8; j++) {
-    o = (o << 1) | digitalRead(HVSP.SDO);
-    digitalWrite(HVSP.SDI, (d & 0x80) ? HIGH : LOW);
+    o = (o << 1) | zifRead(HVSP.SDO);
+    zifWrite(HVSP.SDI, (d & 0x80) ? HIGH : LOW);
     d = d << 1;
-    digitalWrite(HVSP.SII, (i & 0x80) ? HIGH : LOW);
+    zifWrite(HVSP.SII, (i & 0x80) ? HIGH : LOW);
     i = i << 1;
-    digitalWrite(HVSP.SCI, LOW);
+    zifWrite(HVSP.SCI, LOW);
     delayMicroseconds(pulseWidth);
-    digitalWrite(HVSP.SCI, HIGH);
+    zifWrite(HVSP.SCI, HIGH);
     delayMicroseconds(pulseWidth);
   }
-  digitalWrite(HVSP.SDI, LOW);
-  digitalWrite(HVSP.SII, LOW);
+  zifWrite(HVSP.SDI, LOW);
+  zifWrite(HVSP.SII, LOW);
 
-  digitalWrite(HVSP.SCI, LOW);
-  delayMicroseconds(pulseWidth);
-
-  digitalWrite(HVSP.SCI, HIGH);
-  delayMicroseconds(pulseWidth);
-  digitalWrite(HVSP.SCI, LOW);
+  zifWrite(HVSP.SCI, LOW);
   delayMicroseconds(pulseWidth);
 
-  digitalWrite(HVSP.SCI, HIGH);
+  zifWrite(HVSP.SCI, HIGH);
   delayMicroseconds(pulseWidth);
-  digitalWrite(HVSP.SCI, LOW);
+  zifWrite(HVSP.SCI, LOW);
+  delayMicroseconds(pulseWidth);
+
+  zifWrite(HVSP.SCI, HIGH);
+  delayMicroseconds(pulseWidth);
+  zifWrite(HVSP.SCI, LOW);
   delayMicroseconds(pulseWidth);
   return o;
 }
@@ -172,37 +172,37 @@ static void sendchar(char c) {
 
 // A. PP Load Command
 void loadCommand(byte command) {
-  digitalWrite(HVPP.BS1, LOW);
-  digitalWrite(HVPP.BS2, LOW);
-  digitalWrite(HVPP.XA1, HIGH);
-  digitalWrite(HVPP.XA0, LOW);
+  zifWrite(HVPP.BS1, LOW);
+  zifWrite(HVPP.BS2, LOW);
+  zifWrite(HVPP.XA1, HIGH);
+  zifWrite(HVPP.XA0, LOW);
   dataMode(OUTPUT);
   dataWrite(command);
   toggleXTAL();
 }
 // B/G. PP Load Address byte
 void loadAddress(byte address, bool high = false) {
-  digitalWrite(HVPP.XA1, LOW);
-  digitalWrite(HVPP.XA0, LOW);
-  digitalWrite(HVPP.BS1, high);
+  zifWrite(HVPP.XA1, LOW);
+  zifWrite(HVPP.XA0, LOW);
+  zifWrite(HVPP.BS1, high);
   dataWrite(address);
   toggleXTAL();
 }
 // C/D. Load data
 void loadData(byte data, bool high = false) {
-  digitalWrite(HVPP.XA1, LOW);
-  digitalWrite(HVPP.XA0, HIGH);
-  digitalWrite(HVPP.BS1, high);
+  zifWrite(HVPP.XA1, LOW);
+  zifWrite(HVPP.XA0, HIGH);
+  zifWrite(HVPP.BS1, high);
   dataWrite(data);
   toggleXTAL();
 }
 // E. Read byte
 byte readByte(bool BS1) {
   dataMode(INPUT);
-  digitalWrite(HVPP.BS1, BS1);
-  digitalWrite(HVPP.OE,  LOW);
+  zifWrite(HVPP.BS1, BS1);
+  zifWrite(HVPP.OE,  LOW);
   byte val = dataRead();
-  digitalWrite(HVPP.OE,  HIGH);
+  zifWrite(HVPP.OE,  HIGH);
   return val;
 }
 
@@ -485,17 +485,15 @@ Index  Názov param. Dĺžka Popis
     resetTarget();
  
     if (targetISP == IDC06) {
-      pinMode(IDC06_PIN_RESET, OUTPUT);
+      zifMode(IDC06_PIN_RESET, OUTPUT);
       SPI.begin();
       SPI.beginTransaction(SPISettings(SPI_CLOCK, MSBFIRST, SPI_MODE0));
-      digitalWrite(IDC06_PIN_SCK, LOW);
+      zifWrite(IDC06_PIN_SCK, LOW);
     } else {
-      pinMode(ZIF40_PIN_RESET, OUTPUT);
-      // VirtualSPI.begin(uint8_t mosi, uint8_t miso, uint8_t sck)
-      // VirtualSPI.begin(ZIF[29], ZIF[30], ZIF[31]); // ATmega328
+      zifMode(ZIF40_PIN_RESET, OUTPUT);
       VirtualSPI.begin(ZIF40_PIN_MOSI, ZIF40_PIN_MISO, ZIF40_PIN_SCK); // ZIF40
       VirtualSPI.beginTransaction(vSPISettings(SPI_CLOCK, MSBFIRST, SPI_MODE0));
-      digitalWrite(ZIF40_PIN_SCK, LOW);
+      zifWrite(ZIF40_PIN_SCK, LOW);
     }
 
     delay(20);                          // Wait for at least 20ms and enable serial programming
@@ -540,18 +538,21 @@ Index  Názov param. Dĺžka Popis
 //*****************************************************  
   } else if (cmd == CMD_LEAVE_PROGMODE_ISP) {   // 0x11
                                                           if (STKdump) lcdPrintln("EndISP");
+    // msgBuffer[1];   // preDelay  (in ms)
+    // msgBuffer[2];   // postDelay (in ms)
+
     resetTarget(false);
 
     if (targetISP == IDC06) {
       SPI.end();
-      pinMode(IDC06_PIN_MOSI, INPUT);
-      pinMode(IDC06_PIN_SCK, INPUT);
-      pinMode(IDC06_PIN_RESET, INPUT);
+      zifMode(IDC06_PIN_MOSI, INPUT);
+      zifMode(IDC06_PIN_SCK, INPUT);
+      zifMode(IDC06_PIN_RESET, INPUT);
     } else {
       VirtualSPI.end();
-      // pinMode(ZIF40_PIN_MOSI, INPUT); // Impleted in virtual_spi
-      // pinMode(ZIF40_PIN_SCK, INPUT);
-      pinMode(ZIF40_PIN_RESET, INPUT);
+      // zifMode(ZIF40_PIN_MOSI, INPUT); // Impleted in virtual_spi
+      // zifMode(ZIF40_PIN_SCK, INPUT);
+      zifMode(ZIF40_PIN_RESET, INPUT);
     }
 
     setupISP(currentMCUpackage, false);   // Disconnet MCU
@@ -632,11 +633,10 @@ Index  Názov param. Dĺžka Popis
             delayMicroseconds(10);
             val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
             timeout--;
-          } while(val == 1 && timeout > 0);
+          } while((val & 0x01) && timeout > 0);
         } else {
           delay(pDelay);            // Timed delay
         }
-
       }
 
       STKP_address += (size / 2);
@@ -654,7 +654,7 @@ Index  Názov param. Dĺžka Popis
             delayMicroseconds(10);
             val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
             timeout--;
-          } while(val == 1 && timeout > 0);
+          } while((val & 0x01) && timeout > 0);
         } else {
           delay(pDelay);            // Timed delay
         }
@@ -694,6 +694,7 @@ Index  Názov param. Dĺžka Popis
 //                                                          if (STKdump) lcdDump(msgBuffer, msgLength);
     uint16_t size = ((uint16_t)msgBuffer[1] << 8) | msgBuffer[2];
     uint8_t  mode = msgBuffer[3];  // 0xC1
+//                                                          if (STKdump) lcdPrintHex(mode, 'm');
     /*  Bit Function in the mode byte
         0   0 = Word mode, 1 = Page mode
         1   Timed delay word mode
@@ -725,16 +726,20 @@ Index  Názov param. Dĺžka Popis
           STKP_address & 0xFF, 0x00);
       
         if (mode & 0x40) {          // RDY/BSY polling
+        //if (mode & 0x40 && false) {          // RDY/BSY polling - currently still disabled
           do {
             delayMicroseconds(10);
             val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
             timeout--;
-          } while(val == 1 && timeout > 0);
+          } while((val & 0x01) && timeout > 0);
         } else {
           delay(pDelay);            // Timed delay
         }
-
+//                                                          if (STKdump) lcdPrintHex(val, 'v');
+//                                                          if (STKdump) lcdPrintHex(pDelay, 'd');
+//                                                          if (STKdump) lcdPrintHex(pDelay*100 - timeout, 't');
       }
+      
       STKP_address += size;
 
     } else {                        // WORD MODE
@@ -750,7 +755,7 @@ Index  Názov param. Dĺžka Popis
             delayMicroseconds(10);
             val = spi_transaction(0xF0, 0x00, 0x00, 0x00);
             timeout--;
-          } while(val == 1 && timeout > 0);
+          } while((val & 0x01) && timeout > 0);
         } else {
           delay(pDelay);            // Timed delay
         }
@@ -761,6 +766,7 @@ Index  Názov param. Dĺžka Popis
 
     msgBuffer[1] = STATUS_CMD_OK;
     msgLength = 2;
+//                                                          if (STKdump) lcdPrintHex(timeout, 't');
     if (!timeout) {
       msgBuffer[1] = STATUS_RDY_BSY_TOUT;
       STKError = msgBuffer[0];
@@ -896,16 +902,15 @@ Index  Názov param. Dĺžka Popis
     dataWrite(0x00);
 
     // 2. Sekvencia zapínania napätí
-    digitalWrite(currentMCU.VCC1, HIGH);          // Zapni VCC (5V)
+    zifWrite(currentMCU.VCC1, HIGH);          // Zapni VCC (5V)
     if (currentMCU.VCC2)
-      digitalWrite(currentMCU.VCC2, HIGH);
+      zifWrite(currentMCU.VCC2, HIGH);
     delayMicroseconds(100);                       // Stabilizácia
 
     // 3. Activate 12V to RESET pin
     HV_apply(currentMCU.HVPP);
     digitalWrite(HVxP_ON_12V, LOW);               // LOW value Power switch ON 12V
     delayMicroseconds(10);                        // Short delay on apply 12V
-    
     if (digitalRead(VPP_CSENSE)) {                // Check if 12V not high currency
       digitalWrite(HVxP_ON_12V, HIGH);            // and disable 12V if high currency
       setupHVxP(currentMCUpackage, false);
@@ -917,12 +922,12 @@ Index  Názov param. Dĺžka Popis
 
     // 4. Dokončenie sekvencie vstupu
     // Niektoré čipy vyžadujú počas držania 12V krátky pulz na XTAL alebo WR
-    digitalWrite(HVPP.WR, HIGH);
-    digitalWrite(HVPP.OE, HIGH);
+    zifWrite(HVPP.WR, HIGH);
+    zifWrite(HVPP.OE, HIGH);
     
     // 5. Počkáme, kým čip potvrdí pripravenosť (ak RDY pin existuje)
     uint16_t timeout = 100;  // 1 ms
-    while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
+    while(zifRead(HVPP.RDY) == LOW && timeout > 0) {
       delayMicroseconds(10);
       timeout--;
     }
@@ -955,12 +960,12 @@ Index  Názov param. Dĺžka Popis
     uint16_t timeout = 100 * msgBuffer[2]; // 10 ms
 
     loadCommand(0x80);
-    digitalWrite(HVPP.WR, LOW);
+    zifWrite(HVPP.WR, LOW);
     if (pulseWidth) delay(pulseWidth);
     else delayMicroseconds(1);
-    digitalWrite(HVPP.WR, HIGH);
+    zifWrite(HVPP.WR, HIGH);
 
-    while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
+    while(zifRead(HVPP.RDY) == LOW && timeout > 0) {
       delayMicroseconds(10);
       timeout--;
     }
@@ -1002,17 +1007,17 @@ Index  Názov param. Dĺžka Popis
         loadAddress((STKP_address + i) & 0xFF, LOW);
         loadData(msgBuffer[p++], LOW);
         loadData(msgBuffer[p++], HIGH);
-        //digitalWrite(HVPP.BS1, HIGH);
-        digitalWrite(HVPP.PAGEL, HIGH); // LATCH Data
+        //zifWrite(HVPP.BS1, HIGH);
+        zifWrite(HVPP.PAGEL, HIGH); // LATCH Data
         delayMicroseconds(1);
-        digitalWrite(HVPP.PAGEL, LOW);
+        zifWrite(HVPP.PAGEL, LOW);
       }
 
       if (mode & 0x80) {           // WRITE PAGE
         loadAddress((STKP_address >> 8) & 0xFF, HIGH);
         commitWrite();                  // negative pulse WR starts programming
 
-        while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
+        while(zifRead(HVPP.RDY) == LOW && timeout > 0) {
           delayMicroseconds(10);
           timeout--;
         }
@@ -1081,16 +1086,16 @@ Index  Názov param. Dĺžka Popis
       for (uint16_t i = 0; i < size; i++) {
         loadAddress( STKP_address & 0xFF, LOW);
         loadData(msgBuffer[p++]);
-        digitalWrite(HVPP.PAGEL, HIGH); // LATCH Data
+        zifWrite(HVPP.PAGEL, HIGH); // LATCH Data
         delayMicroseconds(1);
-        digitalWrite(HVPP.PAGEL, LOW);
+        zifWrite(HVPP.PAGEL, LOW);
         STKP_address++;
       }
       if (mode & 0x80) {           // WRITE PAGE
-        digitalWrite(HVPP.BS1, LOW);
+        zifWrite(HVPP.BS1, LOW);
         commitWrite();                  // negative pulse WR starts programming
 
-        while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
+        while(zifRead(HVPP.RDY) == LOW && timeout > 0) {
           delayMicroseconds(10);
           timeout--;
         }
@@ -1133,13 +1138,13 @@ Index  Názov param. Dĺžka Popis
     
     loadCommand(0x40);
     loadData(msgBuffer[2]);
-    digitalWrite(HVPP.BS1, (fuse & 0x01) == 1);
-    digitalWrite(HVPP.BS2, (fuse & 0x02) == 2);
-    // digitalWrite(HVPP.BS1, bitRead(msgBuffer[1], 0));
-    // digitalWrite(HVPP.BS2, bitRead(msgBuffer[1], 1));
+    zifWrite(HVPP.BS1, (fuse & 0x01) == 1);
+    zifWrite(HVPP.BS2, (fuse & 0x02) == 2);
+    // zifWrite(HVPP.BS1, bitRead(msgBuffer[1], 0));
+    // zifWrite(HVPP.BS2, bitRead(msgBuffer[1], 1));
     commitWrite(pulseWidth);
 
-    while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
+    while(zifRead(HVPP.RDY) == LOW && timeout > 0) {
       delayMicroseconds(10);
       timeout--;
     }
@@ -1165,7 +1170,7 @@ Index  Názov param. Dĺžka Popis
     // else           {bs1 = 0; bs2 = 1;}
 
     loadCommand(0x04);
-    digitalWrite(HVPP.BS2, fuse >= 1);
+    zifWrite(HVPP.BS2, fuse >= 1);
     val = readByte((fuse & 0x01) == 1);
 
     msgLength = 3;
@@ -1183,7 +1188,7 @@ Index  Názov param. Dĺžka Popis
     loadData(msgBuffer[2]);
     commitWrite(pulseWidth);
 
-    while(digitalRead(HVPP.RDY) == LOW && timeout > 0) {
+    while(zifRead(HVPP.RDY) == LOW && timeout > 0) {
       delayMicroseconds(10);
       timeout--;
     }
@@ -1200,7 +1205,7 @@ Index  Názov param. Dĺžka Popis
     uint8_t fuse = msgBuffer[1];    // Address of fuse byte (low, high, ext, ext2)
 
     loadCommand(0x04);
-    digitalWrite(HVPP.BS2, LOW);    // requered if XA1/BS2 same pin
+    zifWrite(HVPP.BS2, LOW);    // requered if XA1/BS2 same pin
     val = readByte(HIGH);
 
     msgLength = 3;
@@ -1286,14 +1291,14 @@ Index  Názov param. Dĺžka Popis
     setupHVxP(currentMCUpackage);
 
     // 1. Set the Prog_enable pins to “000” and wait at least 100ns.
-    if (HVSP.PEN0) digitalWrite(HVSP.PEN0, LOW);
-    if (HVSP.PEN1) digitalWrite(HVSP.PEN1, LOW);
-    if (HVSP.PEN2) digitalWrite(HVSP.PEN2, LOW);
-    if (HVSP.PEN3) digitalWrite(HVSP.PEN3, LOW);
-    digitalWrite(currentMCU.RESET, LOW);
+    if (HVSP.PEN0) zifWrite(HVSP.PEN0, LOW);
+    if (HVSP.PEN1) zifWrite(HVSP.PEN1, LOW);
+    if (HVSP.PEN2) zifWrite(HVSP.PEN2, LOW);
+    if (HVSP.PEN3) zifWrite(HVSP.PEN3, LOW);
+    zifWrite(currentMCU.RESET, LOW);
 
     // 2. Apply 4.5 - 5.5V between VCC and GND. Ensure that VCC reaches at least 1.8V within the next 20 µs
-    digitalWrite(currentMCU.VCC1, HIGH);          // Zapni VCC (5V)
+    zifWrite(currentMCU.VCC1, HIGH);          // Zapni VCC (5V)
     delayMicroseconds(100);                       // Stabilizácia
 
     // if (HVSP.SDO == HVSP.PEN2)                    // Small tiny25 requered toggle SCI at least six times
@@ -1303,7 +1308,6 @@ Index  Názov param. Dĺžka Popis
     HV_apply(currentMCU.HVPP);
     digitalWrite(HVxP_ON_12V, LOW);               // LOW value Power switch ON 12V
     delayMicroseconds(10);
-    
     if (digitalRead(VPP_CSENSE)) {                // Check if 12V not high currency
       digitalWrite(HVxP_ON_12V, HIGH);            // and disable 12V if high currency
       setupHVxP(currentMCUpackage, false);
@@ -1314,8 +1318,8 @@ Index  Názov param. Dĺžka Popis
     }
 
     // 4. Release the Prog_enable[2]/SDO pin after tHVRST has elapsed.
-    pinMode(HVSP.PEN2, INPUT);
-    pinMode(HVSP.SDO, INPUT);
+    zifMode(HVSP.PEN2, INPUT);
+    zifMode(HVSP.SDO, INPUT);
 
     // 5. Wait at least 50µs before giving any serial instructions on SDI/SII.
     delayMicroseconds(300);                        // Short pause after 12V apply
@@ -1328,8 +1332,8 @@ Index  Názov param. Dĺžka Popis
 //*****************************************************  
   } else if (cmd == CMD_LEAVE_PROGMODE_HVSP) {  // 0x31
                                                           if (STKdump) lcdPrintln("EndSP");
-    digitalWrite(HVSP.SCI, LOW);
-    digitalWrite(currentMCU.RESET, LOW);
+    zifWrite(HVSP.SCI, LOW);
+    zifWrite(currentMCU.RESET, LOW);
     digitalWrite(HVxP_ON_12V, HIGH);              // HIGH value Power switch OFF 12V
     setupHVxP(currentMCUpackage, false);
 
@@ -1351,7 +1355,7 @@ Index  Názov param. Dĺžka Popis
     doubleTransfer(0x00, 0x6C);
 
     if (eraseTime) delay(eraseTime);
-    else while(digitalRead(HVSP.SDO) == LOW && timeout > 0) {
+    else while(zifRead(HVSP.SDO) == LOW && timeout > 0) {
       delayMicroseconds(10);
       timeout--;
     }
@@ -1405,7 +1409,7 @@ Index  Názov param. Dĺžka Popis
         doubleTransfer(0x00, 0x64);
         doubleTransfer(0x00, 0x6C);
 
-        while(digitalRead(HVSP.SDO) == LOW && timeout > 0) {
+        while(zifRead(HVSP.SDO) == LOW && timeout > 0) {
           delayMicroseconds(10);
           timeout--;
         }
@@ -1496,7 +1500,7 @@ Index  Názov param. Dĺžka Popis
         doubleTransfer(0x00, 0x64);
         doubleTransfer(0x00, 0x6C);
 
-        while(digitalRead(HVSP.SDO) == LOW && timeout > 0) {
+        while(zifRead(HVSP.SDO) == LOW && timeout > 0) {
           delayMicroseconds(10);
           timeout--;
         }
@@ -1562,7 +1566,7 @@ Index  Názov param. Dĺžka Popis
       doubleTransfer(0x00, 0x6E);
     }
 
-    while(digitalRead(HVSP.SDO) == LOW && timeout > 0) {
+    while(zifRead(HVSP.SDO) == LOW && timeout > 0) {
       delayMicroseconds(10);
       timeout--;
     }
@@ -1608,7 +1612,7 @@ Index  Názov param. Dĺžka Popis
     doubleTransfer(0x00, 0x64);
     doubleTransfer(0x00, 0x6C);
 
-    while(digitalRead(HVSP.SDO) == LOW && timeout > 0) {
+    while(zifRead(HVSP.SDO) == LOW && timeout > 0) {
       delayMicroseconds(10);
       timeout--;
     }
@@ -1675,8 +1679,7 @@ Index  Názov param. Dĺžka Popis
 
 
 
-void stk500v2_process() {
-  uint8_t ch = SERIAL.read();
+void stk500v2_process(uint8_t ch) {
 //                                                          if (STKdump) lcdPrintHex(ch);
   
   if (msgState != STK_START && msgState != STK_GET_CHECK) {
@@ -1746,3 +1749,36 @@ void stk500v2_process() {
       break;
   }
 }
+
+void signatureReadISP() {
+  uint8_t buffer[] = { 0x10, 200, 100, 25, 32, 0, 0x53, 3, 0xAC, 0x53, 0, 0 };
+  memcpy(&msgBuffer, &buffer, sizeof(buffer));
+  stk500v2_commands();    // Enter Progmode
+  msgBuffer[0] = 0x30;
+  msgBuffer[1] = 0;
+  msgBuffer[3] = 0;
+  for (byte i = 0; i < 3; i++) {
+    msgBuffer[2] = i;
+    signature[i] = spi_transaction(msgBuffer, 0);
+  }
+  msgBuffer[0] = 0x11;
+  stk500v2_commands();    // Leave Progmode
+}
+
+void signatureReadOLD() {
+  uint8_t buffer[] = { 0x10, 200, 100, 25, 32, 0, 0x53, 3, 0xAC, 0x53, 0, 0 };
+  memcpy(&msgBuffer, &buffer, sizeof(buffer));
+  stk500v2_commands();
+  msgBuffer[0] = 0x1B;
+  for (byte i = 0; i < 3; i++) {
+    msgBuffer[1] = 0;
+    msgBuffer[2] = 0x30;
+    msgBuffer[3] = 0;
+    msgBuffer[4] = i;
+    msgBuffer[5] = 0;
+    stk500v2_commands();
+  }
+  msgBuffer[0] = 0x11;
+  stk500v2_commands();
+}
+

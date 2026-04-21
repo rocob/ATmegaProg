@@ -1,10 +1,10 @@
 /*
   ATmegaProg
-  HW v1.0 , FW v1.0.2
+  HW v1.0 , FW v1.1.0
 
   created 2026.03.03
   by Robert Kovaľ <http://www.toroproduction.sk>
-  modified 2026.04.12
+  modified 2026.04.14
   by Robert Kovaľ
 
   This is private source code
@@ -18,8 +18,8 @@
  *                           ZIF 40 connection
  *
  *
- *         /------- PA -------\    /------- PC -------\    /- PL -\
- *        7  6  5  4  3  2  1  0  7  6  5  4  3  2  1  0  7  6  5  4
+ *       PB   /------- PA -------\    /------- PC -------\    / PL \
+ *        0  7  6  5  4  3  2  1  0  7  6  5  4  3  2  1  0  7  6  5
  *     40 |  |  |  |  |  |  |  |  |  H  |  |  |  |  |  |  |  |  |  | 21
  *       +----------------------------------------------------------+
  *       |----------------------------------------+                 |
@@ -29,8 +29,8 @@
  *       |°---------------------------------------+                 |
  *       +°---------------------------------------------------------+
  *     1  H  |  |  H  |  |  |  |  H  H  |  |  |  |  |  |  |  |  |  | 20
- *        0  1  2  3  4  5  6  7  0  1  2  3  4  5  6  7  0  1  2  3
- *         \------- PF -------/    \------- PK -------/    \- PL -/
+ *        1  2  3  4  5  6  7  0  1  2  3  4  5  6  7  0  1  2  3  4
+ *         \----- PF ------/    \------- PK -------/    \-- PL ---/
  *
  *
  *  o* pin 1 of ZIF40 is always pin 1 MCU package
@@ -39,7 +39,7 @@
 */
 
 #define PARAM_BUILD_NUMBER_HIGH_VAL 1
-#define PARAM_BUILD_NUMBER_LOW_VAL  (16 * 0 + 2)  // max 15 + 15
+#define PARAM_BUILD_NUMBER_LOW_VAL  (16 * 1 + 0)  // max 15 + 15
 
 #define HWVERSION     2
 #define SWMAJOR       2   // 1
@@ -52,20 +52,13 @@
 
 #include "Arduino.h"
 #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SH110X.h>
-//#include <Adafruit_SSD1306.h>
+#include <U8g2lib.h>
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define SCREEN_BLACK   0 // OLED display black color
-#define SCREEN_WHITE   1 // OLED display white color
-
-#define OLED_RESET    -1 // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C // See datasheet for Address; 
-                            // 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-//Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+//U8G2_SSD1312_128X64_NONAME_F_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+//U8G2_SSD1306_128X64_NONAME_F_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+//U8G2_SH1106_128X64_NONAME_F_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
+//U8G2_SH1107_SEEED_128X128_F_HW_I2C display(U8G2_R0, /* reset=*/ U8X8_PIN_NONE);
 
 #if defined(ARDUINO_AVR_MEGA2560)
   #define SELA        6
@@ -73,30 +66,29 @@ Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, 
   #define SELC        8
   #define HVxP_ON_12V 9
   #define VPP_CSENSE  2
-  #define VTG_VSENSE  40
-  #define LED_RUN     13  // 5
+  #define LED_RUN     5
   #define LED_ERR     4
   #define LED_PROG    3
-  #define KEY_UP      12
-  #define KEY_DOWN    11
-  #define KEY_OK      10
-  #define VTG_PIN     69  // A16
-  #define VTG_REF     INTERNAL2V56 // DEFAULT 
+  #define KEY_UP      12  // PB6 / 47
+  #define KEY_DOWN    11  // PB5 / 46
+  #define KEY_OK      10  // PB4 / 45
+  #define VTG_PIN     54  // A0
+  #define VTG_REF     INTERNAL2V56 // DEFAULT
 
-  const uint8_t ZIF[41] = { 0, // pin 0 not exist
-    54, 55, 56, 57, 58, 59, 60, 61, // PF
-    62, 63, 64, 65, 66, 67, 68, 69, // PK
-    49, 48, 47, 46, 45, 44, 43, 42, // PL
-    37, 36, 35, 34, 33, 32, 31, 30, // PC
-    22, 23, 24, 25, 26, 27, 28, 29  // PA
-  };
+//  const uint8_t ZIF[41] = { 0, // pin 0 not exist
+//    54, 55, 56, 57, 58, 59, 60, 61, // PF
+//    62, 63, 64, 65, 66, 67, 68, 69, // PK
+//    49, 48, 47, 46, 45, 44, 43, 42, // PL
+//    37, 36, 35, 34, 33, 32, 31, 30, // PC
+//    22, 23, 24, 25, 26, 27, 28, 29  // PA
+//  };
 
 
   // PROGMODE_ISP External IDC6 Connector
-  const uint8_t IDC06_PIN_RESET = 53;
-  const uint8_t IDC06_PIN_MOSI  = 51;
-  const uint8_t IDC06_PIN_MISO  = 50;
-  const uint8_t IDC06_PIN_SCK   = 52;
+  #define IDC06_PIN_RESET 41  // 53; // PB0
+  #define IDC06_PIN_MOSI  43  // 51; // PB2
+  #define IDC06_PIN_MISO  44  // 50; // PB3
+  #define IDC06_PIN_SCK   42  // 52; // PB1
 
 #else
   #error Only ATmega2560 MCU Support!!!
@@ -127,7 +119,7 @@ char deviceNameText[15];
 
 bool newClear = true;
 //bool enMCUview = true;
-bool STKdump = true;
+bool STKdump = false;
 uint32_t detectTime = 0;
 
 uint8_t viewMode = 0;
@@ -138,69 +130,81 @@ uint8_t viewMode = 0;
 
 void lcdClear() {
   display.clearDisplay();
-  display.setCursor(0, 0);
+  display.setCursor(0, 8);
   newClear = false;
   viewMode = VIEW_MODE_NONE;
 }
 
 void lcdPrintLogo() {
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(SCREEN_WHITE);
-  display.setCursor(0, 0);
-  display.println("ATmegaProg");
-  display.display();
-  display.setTextSize(1);
+  display.clearBuffer();
+  display.setFontMode(1);
+  display.setFont(u8g2_font_lubB14_tr);  // u8g2_font_cu12_tr
+  display.setCursor(0, 16);
+  display.print("ATmegaProg");
+  display.drawHLine(0, 18, 56);
+  display.drawHLine(74, 18, 38);
+  display.sendBuffer();
+  display.setFont(u8g2_font_6x10_tr);   // u8g2_font_squeezed_b7_tr
 }
 
 void lcdPrintHex(uint32_t c, char e = ' ') {
+  uint16_t x = display.getCursorX();
+  uint16_t y = display.getCursorY();
+  if (x > 120) {
+    if (y < 64) display.setCursor(0, y + 8);
+    else {
+      // display.clearBuffer();
+      // display.setCursor(0, 8);
+      return;
+    }
+  }
   if (c < 16) display.print(0);
   display.print(c, HEX);
-  display.print(e);
-  // if (disp) 
-  display.display();
+  if (e == ' ')
+    display.setCursor(display.getCursorX() + 4, display.getCursorY());
+  else display.print(e);
+  display.sendBuffer();
 }
 
 void lcdPrintln(char* c) {
-  display.println(c);
-  display.display();
+  display.setCursor(display.getCursorX(), display.getCursorY() + 8);
+  display.print(c);
+  display.sendBuffer();
 }
 
 void lcdDump(uint8_t *buffer, uint16_t size) {
+  uint16_t x, y;
   for (uint16_t i = 0; i < size; i++) {
+    x = display.getCursorX();
+    y = display.getCursorY();
+    if (x > 120) {
+      if (y < 64) display.setCursor(0, y + 8);
+      else {
+        // display.clearBuffer();
+        // display.setCursor(0, 8);
+        return;
+      }
+    }
     if (buffer[i] < 16) display.print(0);
     display.print(buffer[i], HEX);
     display.print(" ");
   }
-  display.display();
-  display.println();
+  display.sendBuffer();
+  display.setCursor(0, display.getCursorY() + 8);
 }
 
-void lcdPrintMCUname() {
-  int16_t x = display.getCursorX();
-  int16_t y = display.getCursorY();
-  display.fillRect(12, 12, 100, 8, SCREEN_BLACK);
-  display.setCursor(24, 12);
-  display.print(deviceNameText);
-  display.setCursor(x, y);
-  display.display();
-}
-
-void viewMCU(uint8_t s, uint8_t type, uint8_t model) {
-  display.clearDisplay();
-
-  display.setTextSize(1);
-  display.setTextColor(SCREEN_WHITE);
-  display.setCursor(4, 0);
+void viewMCU(uint8_t s, uint8_t type, bool model) {
+  display.clearBuffer();
+  display.setCursor(4, 7);
   uint8_t half = s / 2;
   // display.print("12345678901234567890");
   for (uint8_t i = 40; i > 20; i--) {
     display.print((half > 0) ? char((i + s - 40) % 10 + 48) : char(124));
     if (half) half--;
   }
-  display.drawRect(0, 8, 128, 15, SCREEN_WHITE);
-  display.fillCircle(4, 18, 2, SCREEN_WHITE);
-  display.setCursor(4, 24);
+  display.drawFrame(0, 8, 128, 15);
+  display.drawCircle(4, 18, 2);
+  display.setCursor(4, 32);
   half = s / 2;
   // display.print("12345678901234567890");
   for (uint8_t i = 1; i < 21; i++) {
@@ -209,11 +213,10 @@ void viewMCU(uint8_t s, uint8_t type, uint8_t model) {
   }
   if (signature[0] == 0x1E && progMode == 0) {
     if (model) {
-      // lcdPrintMCUname();
-      display.setCursor(24, 12);
+      display.setCursor(24, 19);
       display.print(deviceNameText);
     } else {
-      display.setCursor(12, 12),
+      display.setCursor(12, 19),
       display.print("Unknown ");
       for (uint8_t i = 0; i < 3; i++) {
         if (signature[i] < 16) display.print(0);
@@ -221,13 +224,44 @@ void viewMCU(uint8_t s, uint8_t type, uint8_t model) {
       }
     }
   } else {
-    display.setCursor(48, 12);
+    display.setCursor(24, 19);
     display.print("DIL ");
     display.print(s);
     display.print(" - ");
     display.print(type);
   }
-  display.display();
+  display.setCursor(108, 19);
+  if (STKError) {
+    display.print("E");
+    display.print(STKError, HEX);
+  }
+  display.sendBuffer();
+}
+
+void lcdPrintInfo(bool model) {
+  display.clearBuffer();
+  display.setCursor(0, 8);
+  if (model) {
+    display.print("Model: ");
+    display.print(deviceNameText);
+  } else { //if (signature[0] == 0x1E) {
+    display.print("Model: ---");
+  } 
+  display.setCursor(0, display.getCursorY() + 8);
+  display.print("Flash: ");
+  display.print(calcSize(signature[1]));
+  display.setCursor(0, display.getCursorY() + 8);
+  display.print("Sign : ");
+  for (uint8_t i = 0; i < 3; i++) {
+    if (signature[i] < 16) display.print(0);
+    display.print(signature[i], HEX);
+  }
+  display.setCursor(0, display.getCursorY() + 8);
+  if (STKError) {
+    display.print("Error: ");
+    display.print(STKError, HEX);
+  }
+  display.sendBuffer();
 }
 
 char* calcSize(uint8_t s) {
@@ -239,7 +273,7 @@ char* calcSize(uint8_t s) {
     return (char*)"512 B";
   } else if (s < 0x9A) {
     uint16_t size = 1 << (s & 0x0F);
-    sprintf(buffer, "%u kB", size); 
+    sprintf(buffer, "%u kB", size);
     return buffer;
   } else {
     return (char*)"big";
@@ -248,10 +282,8 @@ char* calcSize(uint8_t s) {
 
 uint8_t voltageSense() {
   pinMode(VTG_PIN, INPUT);
-  digitalWrite(VTG_VSENSE, HIGH);
   delayMicroseconds(10);
   uint16_t v = analogRead(VTG_PIN);
-  digitalWrite(VTG_VSENSE, LOW);
   return v/20;
 }
 
@@ -288,7 +320,7 @@ void setup() {
   SERIAL.begin(BAUDRATE);
 
   delay(250); // wait for the OLED to power up
-  display.begin(SCREEN_ADDRESS, true); // Address 0x3C default
+  display.begin();
   lcdPrintLogo();
 
   // High Voltage Selector setup
@@ -299,14 +331,14 @@ void setup() {
   pinMode(HVxP_ON_12V, OUTPUT);
 
   // Voltage & Currency Sense setup
-  digitalWrite(VTG_VSENSE, LOW);    // Disable Voltage Sense
-  pinMode(VTG_VSENSE, OUTPUT);
+  pinMode(VTG_PIN, INPUT);
   pinMode(VPP_CSENSE, INPUT);
   analogReference(VTG_REF);
   // analogReadResolution(10);
 
   // LEDs setup
   digitalWrite(LED_ERR, LOW);
+  digitalWrite(LED_PROG, LOW);
   pinMode(LED_RUN, OUTPUT);
   pinMode(LED_ERR, OUTPUT);
   pinMode(LED_PROG, OUTPUT);
@@ -318,8 +350,8 @@ void setup() {
 
   // ZIF40 setup
   for (uint8_t i = 1; i < 41; i++) {
-    digitalWrite(ZIF[i], LOW);
-    pinMode(ZIF[i], INPUT);
+    zifWrite(i, LOW);
+    zifMode(i, INPUT);
   }
 
   // setup ATmega328
@@ -329,17 +361,20 @@ void setup() {
   // setup Target
   bool targetISP = ZIF40;
 
-  //setupTimer(ZIF[39]);
+  // run xtal clock
+  //xtalSetup(48);
+  //delay(2000);
+  //xtalSetup(0);
 
-  // test VTG
-  display.setCursor(0, 24);
+  // read & display VTARGET
+  display.setCursor(0, 32);
   uint8_t vtg = voltageSense();
   display.print("ISP VTARGET: ");
   display.print(vtg/10);
   display.print(".");
   display.print(vtg%10);
   display.print("V");
-  display.display();
+  display.sendBuffer();
   
 }
 
@@ -351,7 +386,8 @@ void loop() {
   if (progMode) {
     digitalWrite(LED_PROG, HIGH);
   } else {
-    digitalWrite(LED_PROG, LOW);
+    if (viewMode == VIEW_MODE_NONE)
+      digitalWrite(LED_PROG, LOW);
 
     if (digitalRead(KEY_UP) == LOW) {
       // key up
@@ -359,28 +395,19 @@ void loop() {
         viewMode = VIEW_MODE_PACKAGE;
       else if (viewMode == VIEW_MODE_PACKAGE)
         viewMode = VIEW_MODE_MCUINFO;
-      else
-        viewMode = VIEW_MODE_NONE;
+      else {
+        viewMode = VIEW_MODE_PACKAGE; //VIEW_MODE_NONE;
+        if (xtalPin) xtalSetup(0);
+        else xtalSetup(47);
+      }
       delay(300);
 
-    } else if (viewMode == VIEW_MODE_MCUINFO) {
-      uint8_t model = findDevice(signature[1], signature[2]);
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      if (model) {
-        display.print("Model: ");
-        display.println(deviceNameText);
-      } else if (signature[0] == 0x1E) {
-        display.println("Model: ---");
-      } 
-      display.print("Flash: ");
-      display.println(calcSize(signature[1]));
-      display.print("Sign : ");
-      for (uint8_t i = 0; i < 3; i++) {
-        if (signature[i] < 16) display.print(0);
-        display.print(signature[i], HEX);
-      }
-      display.display();
+    } else if (viewMode == VIEW_MODE_MCUINFO && \
+      detectTime + 1000 < now) {
+      detectTime = now;
+      bool model = findDevice(signature[1], signature[2]);
+      lcdPrintInfo(model);
+      digitalWrite(LED_PROG, LOW);
 
     } else if (viewMode == VIEW_MODE_PACKAGE && \
       detectTime + 1000 < now) { // detection every 1 second
@@ -400,9 +427,19 @@ void loop() {
         } else if (s == 8) {
           currentMCUpackage = 5;
         }
-        uint8_t model = findDevice(signature[1], signature[2]);
+        if (signature[0] != 0x1E) {
+          STKError = 0;
+          digitalWrite(13, HIGH);
+          signatureReadISP();
+          viewMode = VIEW_MODE_PACKAGE;
+          digitalWrite(13, LOW);
+        }
+        bool model = findDevice(signature[1], signature[2]);
         viewMCU(s, currentMCUpackage, model);
+        if (!STKError)
+          digitalWrite(LED_PROG, digitalRead(LED_PROG) == LOW ? HIGH : LOW);
       } else {
+        digitalWrite(LED_PROG, LOW);
         currentMCUpackage = 0;
         signature[0] = 0;
         signature[1] = 0;
@@ -426,7 +463,7 @@ void loop() {
   heartbeat(LED_RUN);
 
   if (SERIAL.available()) {
-    stk500v2_process();
+    stk500v2_process(SERIAL.read());
 
   }
 

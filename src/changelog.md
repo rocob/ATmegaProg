@@ -1,3 +1,13 @@
+1.1.0
+- remap pins for ZIF40
+- remap pin RESET for IDC06
+- remap pin Key_OK
+- new version of schematics and board Rev2
+
+1.0.3  
+- display migrate from Adafruit to u8g2 book
+
+
 1.0.2  12.04.2026
 - add more signatures
 - add IDC06 VTARGET Voltage Sense
